@@ -1,0 +1,20 @@
+numpy
+pandas
+opencv-python
+scipy
+scikit-image
+matplotlib
+scikit-learn
+seaborn
+tqdm
+fastapi
+uvicorn[standard]
+python-multipart
+
+# torch
+torch
+torchvision
+torchaudio
+
+# whisper
+faster-whisper
