@@ -5,8 +5,8 @@
 
   <br>
 
-<a href="https://github.com/sangjung0/SilRok_AI/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=sangjung0/SilRok_AI" />
+<a href="https://github.com/JolupBisang/SilRok_AI/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=JolupBisang/SilRok_AI" />
 </a>
 
   <br>
