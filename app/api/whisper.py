@@ -1,40 +1,26 @@
-from typing import List
-from fastapi import APIRouter, UploadFile, File
-
-from schemas.whisper import Segment
-from services import AppState 
+from fastapi import APIRouter, Depends
+from schemas.whisper import Sentence, SttByte, SttFile, SttStepByte
+from usecase.WhisperUC import WhisperUC
 
 router = APIRouter()
 
-def raw_to_obj(segmentation):
-  result = []
-  for segment in segmentation:
-    result.append(
-      Segment(
-        id=segment.id, 
-        start=segment.start,
-        end=segment.end,
-        text=segment.text
-    ))
+@router.get("/stt", response_model=list[Sentence])
+async def stt_byte(params: SttByte = Depends()):
+  whisper_uc = WhisperUC.get_instance()
+  sentences = await whisper_uc.recognition_bytes(params)
 
-  return result
+  return sentences
 
-@router.get("/stt", response_model=List[Segment])
-async def stt_byte(audio: bytes, language: str = "ko"):
-  state = AppState.get_instance()
-  segmentation, _ = await state.thread_manager.submit_to_executor(
-    state.whisper.translate, audio, language
-  )
+@router.post("/stt", response_model=list[Sentence])
+async def stt_file(form: SttFile = Depends()):
+  whisper_uc = WhisperUC.get_instance()
+  sentences = await whisper_uc.recognition_files(form)
 
-  return raw_to_obj(segmentation)
+  return sentences
 
-@router.post("/stt", response_model=List[Segment])
-async def stt_file(audio: UploadFile = File(...), language: str = "ko"):
-  audio_bytes = await audio.read()
+@router.get("/stt_step")
+async def stt_step(params: SttStepByte = Depends()):
+  whisper_uc = WhisperUC.get_instance()
+  sentences = await whisper_uc.recognition_step_bytes(params)
 
-  state = AppState.get_instance()
-  segmentation, _ = await state.thread_manager.submit_to_executor(
-    state.whisper.translate, audio_bytes, language
-  )
-
-  return raw_to_obj(segmentation)
+  return sentences

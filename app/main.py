@@ -1,19 +1,20 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from api import whisper, main
-from services import AppState
-from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
+
+from api import whisper, main
+from core.lifecycle import shutdown, startup
+from core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 이벤트
-    AppState.startup(app)
+    startup(app)
     yield
     # 서버 종료 이벤트
-    AppState.shutdown(app)
+    shutdown(app)
 
-def server():
+def server() -> FastAPI:
   # FastAPI 앱 생성
   app = FastAPI(
     title=settings.PROJECT_NAME,  # 프로젝트 이름

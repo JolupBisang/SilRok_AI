@@ -1,6 +1,11 @@
 # services/__init__.py
 
-from .ThreadManager import ThreadManager
-from .AppState import AppState
+from .LoggerService import LoggerService
+from .ThreadManagerService import ThreadManagerService
+from .WhisperService import WhisperService
 
-__all__ = ["ThreadManager", "AppState"]
+__all__ = [
+    "LoggerService",
+    "ThreadManagerService",
+    "WhisperService",
+]

@@ -18,3 +18,18 @@ torchaudio
 
 # whisper
 faster-whisper
+pysbd
+kss
+rapidfuzz
+soundfile
+librosa
+
+#redis
+redis[hiredis]
+
+# logging
+loguru
+rich
+
+# jwt
+pyjwt[crypto]

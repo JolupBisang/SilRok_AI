@@ -14,3 +14,16 @@ services:
               count: 1
               capabilities: [gpu]
     command: ["tail", "-f", "/dev/null"]  
+    depends_on:
+      - redis_str
+      - redis_byte
+  
+  redis_str:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  redis_byte:
+    image: redis:latest
+    ports:
+      - "6380:6379"

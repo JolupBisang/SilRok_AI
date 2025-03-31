@@ -1,26 +1,39 @@
-import io
+from typing import Union
 from faster_whisper import WhisperModel, BatchedInferencePipeline
+import numpy as np
 
-MODEL_SIZE = "large-v3"
+from ServerObject import ServerObject
+from core.config import settings
 
-LANGUAGE = {
-  "ko": "This audio is in Korean. but, some English words are included.",
-  "en": "This audio is in English."
-}
+class Whisper(ServerObject):
+  def __init__(
+    self, 
+    beam_size:int = settings.MODEL_BEAM_SIZE, 
+    batch_size:int = settings.MODEL_BATCH_SIZE, 
+    model_size:str = settings.MODEL_SIZE,
+    device:str = settings.MODEL_DEVICE,
+    compute_type:str = settings.MODEL_COMPUTE_TYPE
+  ):
+    super().__init__()
+    self.__BEAM_SIZE = beam_size
+    self.__BATCH_SIZE = batch_size
 
-class Whisper:
-  def __init__(self):
-    self.__model = WhisperModel(MODEL_SIZE, device="cuda", compute_type="int8")
+    self.__model = WhisperModel(model_size, device=device, compute_type=compute_type)
     self.__batched_model = BatchedInferencePipeline(self.__model)
 
-  def translate(self, audio: bytes, language:str = "ko"):
-    if language not in LANGUAGE:
-      raise ValueError(f"Unsupported language: {language}")
- 
-    audio_stream = io.BytesIO(audio)
+  def translate(self, audio: np.ndarray, language:str = None, prompt: str = ""):
+    return self.__model.transcribe(
+      audio, beam_size=self.__BEAM_SIZE, language=language,
+      word_timestamps=True, vad_filter=False,
+      initial_prompt=prompt
+    )
+
+  def translates(self, audio: Union[np.ndarray, list[np.ndarray]], language:str = None):
+    if isinstance(audio, list) and len(audio) > self.__BATCH_SIZE:
+      raise ValueError("The maximum number of audio files is 8.")
 
     return self.__batched_model.transcribe(
-      audio_stream, batch_size=8, beam_size=5, language=language,
-      word_timestamps=True, vad_filter=True,
-      initial_prompt=LANGUAGE[language]
+      audio, batch_size=self.__BATCH_SIZE, 
+      beam_size=self.__BEAM_SIZE, language=language,
+      word_timestamps=True, vad_filter=False
     )

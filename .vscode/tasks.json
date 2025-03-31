@@ -6,7 +6,8 @@
             "type": "shell",
             "command": "${config:python.defaultInterpreterPath}",
             "args": [
-                "/workspaces/dev/${relativeFile}"
+                // "${workspaceFolder}/${relativeFile}"
+                "${workspaceFolder}/app/main.py"
             ],
             "presentation": {
                 "echo": true,
@@ -26,6 +27,6 @@
                 }
             },
             "problemMatcher": []
-        }
+        },
     ]
 }
