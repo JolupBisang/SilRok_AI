@@ -14,4 +14,6 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip \
   && python3 -m pip install --no-cache-dir -r /requirements.txt \
   && rm /requirements.txt
 
-CMD ["/usr/bin/python3", "app/main.py"]
+COPY . /workspaces/app
+
+CMD ["/usr/bin/python3", "/workspaces/app/app/main.py"]

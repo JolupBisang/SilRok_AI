@@ -14,9 +14,9 @@ def startup(app:FastAPI, logger_service:Logger):
   RedisByteManager.get_instance()
   RedisStrManager.get_instance()
 
-  logging.getLogger("uvicorn").setLevel(logging.WARNING)
-  logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-  logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
+  # logging.getLogger("uvicorn").setLevel(logging.WARNING)
+  # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+  # logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
 
   logger_service.info("🚀 FastAPI 서버 시작!")
 

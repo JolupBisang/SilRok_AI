@@ -1,6 +1,6 @@
 name: SilRokAIServer
 services:
-  dev:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,7 +12,7 @@ services:
               count: 1
               capabilities: [gpu]
     ports:
-      - "8000:8080"
+      - "8080:8000"
     depends_on:
       - redis_str
       - redis_byte
