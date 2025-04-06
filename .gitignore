@@ -174,3 +174,7 @@ cython_debug/
 .pypirc
 
 .data/**
+
+.nginx/certbot/conf/**
+.nginx/certbot/renewal/**
+.nginx/certbot/www/**
