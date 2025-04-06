@@ -59,6 +59,7 @@ jobs:
           server_port: 587
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }} 
+          from: ${{ secrets.MAIL_USERNAME }}
           to: sangjung245@gmail.com
           subject: "[CICD] Deploy Succeeded"
           body: "Docker Compose deployment completed successfully."
@@ -71,6 +72,7 @@ jobs:
           server_port: 587
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
+          from: ${{ secrets.MAIL_USERNAME }}
           to: sangjung245@gmail.com
           subject: "[CICD] Deploy Failed"
           body: "Deployment failed. Check the logs."
