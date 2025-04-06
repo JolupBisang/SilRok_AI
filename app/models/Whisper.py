@@ -1,5 +1,6 @@
 from typing import Union
 from faster_whisper import WhisperModel, BatchedInferencePipeline
+from whisper import tokenizer
 import numpy as np
 
 from ServerObject import ServerObject
@@ -20,15 +21,16 @@ class Whisper(ServerObject):
 
     self.__model = WhisperModel(model_size, device=device, compute_type=compute_type)
     self.__batched_model = BatchedInferencePipeline(self.__model)
+    self.__tokenizer = tokenizer.get_tokenizer(multilingual=True)
 
-  def translate(self, audio: np.ndarray, language:str = None, prompt: str = ""):
+  def transcribe(self, audio: np.ndarray, language:str = None, prompt: str = ""):
     return self.__model.transcribe(
       audio, beam_size=self.__BEAM_SIZE, language=language,
       word_timestamps=True, vad_filter=False,
       initial_prompt=prompt
     )
 
-  def translates(self, audio: Union[np.ndarray, list[np.ndarray]], language:str = None):
+  def batched_transcribe(self, audio: Union[np.ndarray, list[np.ndarray]], language:str = None):
     if isinstance(audio, list) and len(audio) > self.__BATCH_SIZE:
       raise ValueError("The maximum number of audio files is 8.")
 
@@ -37,3 +39,7 @@ class Whisper(ServerObject):
       beam_size=self.__BEAM_SIZE, language=language,
       word_timestamps=True, vad_filter=False
     )
+
+  @property
+  def tokenizer(self) -> tokenizer.Tokenizer:
+    return self.__tokenizer

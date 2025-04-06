@@ -2,10 +2,10 @@
 
 from .LoggerService import LoggerService
 from .ThreadManagerService import ThreadManagerService
-from .WhisperService import WhisperService
+from . import whisper
 
 __all__ = [
     "LoggerService",
     "ThreadManagerService",
-    "WhisperService",
+    "whisper",
 ]

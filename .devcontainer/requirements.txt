@@ -17,6 +17,7 @@ torchvision
 torchaudio
 
 # whisper
+openai-whisper
 faster-whisper
 pysbd
 kss

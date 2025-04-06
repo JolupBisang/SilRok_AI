@@ -5,198 +5,268 @@ import json
 
 from ServerObject import ServerObject
 from core import RedisByteManager, RedisStrManager, settings
-from schemas.whisper import Sentence, SttByte, SttFile, SttStepByte, Word
-from services.WhisperService import Sentence as WhisperSentence, Word as WhisperWord
-from services.ThreadManagerService import ThreadManagerService
-from services.WhisperService import WhisperService
+from schemas.whisper import DurationResponse, Sentence, SentenceResponse, SttByte, SttFile, SttDuration, Word
+from services import ThreadManagerService
+from services.whisper import SentenceParams, WordParams, WordService, SentenceService, Service
+from services.whisper import Sentence as WhisperSentence
+from services.whisper import Word as WhisperWord
 from util.util import audio_to_np
 
 class WhisperUC(ServerObject):
 
   @ThreadManagerService.object
-  @WhisperService.object
+  @WordService.object
+  @SentenceService.object
+  @Service.object
   @RedisByteManager.object
   @RedisStrManager.object
   def __init__(
     self,
     thread_manager_service:ThreadManagerService, 
-    whisper_service:WhisperService,
+    word_service:WordService,
+    sentence_service:SentenceService,
+    service:Service,
     redis_byte_manager:RedisByteManager,
     redis_str_manager:RedisStrManager,
     sample_rate:int = settings.MODEL_SAMPLE_RATE,
+    min_audio_duration:int = settings.MIN_AUDIO_DURATION,
   ) -> None:
     super().__init__()
 
     self.__SAMPLE_RATE = sample_rate
+    self.__MIN_AUDIO_DURATION = min_audio_duration
 
     self.thread_manager_service = thread_manager_service
-    self.whisper_service = whisper_service
+    self.word_service = word_service
+    self.sentence_service = sentence_service
+    self.service = service
     self.redis_byte_manager = redis_byte_manager
     self.redis_str_manager = redis_str_manager
     
-  async def get_pre_data(self, group:str, user:str):
-    pre_data = await self.redis_str_manager.pop(f"whisper:{group}:{user}:data")
-    if pre_data is not None:
-      data = json.loads(pre_data)
-      order = data["order"]
-      pre_sentence = None
-      if data["pre_sentence"]:
-        pre_sentence = WhisperSentence(
-          lang = data["pre_sentence"]["lang"],
-          text = data["pre_sentence"]["text"],
-          audio = None,
-          tokens = [
-            WhisperWord(
-              start = word["start"],
-              end = word["end"],
-              text = word["text"]
-            ) for word in data["pre_sentence"]["words"]
-          ]
-        )
-      pre_recog = []
-      for idx, pr in enumerate(data["pre_recog"]):
-        pre_recog.append(WhisperSentence(
-          lang = pr["lang"],
-          text = pr["text"],
-          audio = np.frombuffer(await self.redis_byte_manager.pop(f"whisper:{group}:{user}:audio:{idx}"), dtype=np.float32),
-          tokens = [
-            WhisperWord(
-              start = word["start"],
-              end = word["end"],
-              text = word["text"]
-            ) for word in pr["words"]
-          ]
-        ))
-      return order, pre_sentence, pre_recog
-    return 0, None, []
-      
-  async def set_pre_data(
-    self, 
-    group:str, 
-    user:str, 
-    order:int,
-    pre_sentence:WhisperSentence,
-    pre_recog:list[WhisperSentence]
+  # 오디오 데이터는 추후 병렬처리와 효율성을 위해 shared memory로 변경 필요
+  async def __load_data(
+    self,
+    data_key:str,
+    audio_key:str,
+    prev_audio_key:str,
   ):
-    data = {
-      "order": order,
-      "pre_sentence": {},
-      "pre_recog": []
-    }
-
-    if pre_sentence:
-      data["pre_sentence"] = {
-        "lang": pre_sentence.lang,
-        "text": pre_sentence.text,
-        "words": [
-          {
-            "start": word.start,
-            "end": word.end,
-            "text": word.text
-          } for word in pre_sentence.words
-        ]
-      }
-      
-    if pre_recog:
-      for idx, sentence in enumerate(pre_recog):
-        data["pre_recog"].append({
-          "lang": sentence.lang,
-          "text": sentence.text,
-          "words": [
-            {
-              "start": word.start,
-              "end": word.end,
-              "text": word.text
-            } for word in sentence.words
-          ]
-        })
-        await self.redis_byte_manager.set(f"whisper:{group}:{user}:audio:{idx}", sentence.audio.tobytes())
-
-    await self.redis_str_manager.set(
-      f"whisper:{group}:{user}:data",
-      json.dumps(data),
-    )
+    param = await self.redis_str_manager.pop(data_key)
+    param = json.loads(param) if param else None
+    audio = await self.redis_byte_manager.pop(audio_key)
+    audio = None if audio is None else np.frombuffer(audio, dtype=np.float32)
+    prev_audio = await self.redis_byte_manager.pop(prev_audio_key)
+    prev_audio = None if prev_audio is None else np.frombuffer(prev_audio, dtype=np.float32) 
+    return param, audio, prev_audio
     
-  async def recognition_step(
+  async def __save_data(
+    self,
+    param,
+    audio:np.ndarray,
+    prev_audio:np.ndarray,
+    data_key:str,
+    audio_key:str,
+    prev_audio_key:str,
+  ):
+    await self.redis_str_manager.set(data_key, json.dumps(param.to_dict()))
+    if audio is not None:
+      await self.redis_byte_manager.set(audio_key, audio.tobytes())
+    if prev_audio is not None:
+      await self.redis_byte_manager.set(prev_audio_key, prev_audio.tobytes())
+    
+  async def __transcribe_by_duration(
     self, 
     audio:np.ndarray, 
     group:str,
     user:str,
-    prompt:str,
     language:str = None
   ) -> dict:
+    param, p_audio, prev_audio = await self.__load_data(
+      f"whisper:{group}:{user}:tdd",
+      f"whisper:{group}:{user}:tda",
+      f"whisper:{group}:{user}:tdpa"
+    )
+    param = WordParams.from_dict(param) if param else WordParams()
+    if p_audio is not None:
+      audio = np.concatenate([p_audio, audio])
+    param.audio = audio
+    param.prev_audio = prev_audio
+    param.language = language
 
-    order, pre_sentence, pre_recog = await self.get_pre_data(group, user)
+    if audio.shape[0] < self.__MIN_AUDIO_DURATION:
+      p_audio = audio
 
-    completed_dict, order, pre_sentence, pre_recog = await self.thread_manager_service.submit_to_executor(
-      self.whisper_service.recognition_step,
-      audio, order, prompt=prompt,
-      pre_sentence=pre_sentence, pre_recog=pre_recog,
-      language=language
+      await self.__save_data(
+        param,
+        audio = p_audio,
+        prev_audio = prev_audio,
+        data_key = f"whisper:{group}:{user}:tdd",
+        audio_key = f"whisper:{group}:{user}:tda",
+        prev_audio_key = f"whisper:{group}:{user}:tdpa"
+      )
+
+      result = DurationResponse(
+        completed = [],
+        candidate = [],
+      )
+
+      return result
+      
+    result, _ = await self.thread_manager_service.submit_to_executor(
+      self.word_service.transcribe, param
     )
 
-    await self.set_pre_data(group, user, order, pre_sentence, pre_recog)
+    param.order = result.order
+    param.time_offset = result.time_offset
+    param.prev_audio = result.prev_audio
+    param.prev_words = result.prev_words
+    param.prev_recog = result.prev_recog
+    param.prev_prob_mean = result.prev_prob_mean
+    param.prev_prob_std = result.prev_prob_std
+    param.prev_prob_count = result.prev_prob_count
+    param.prev_dura_mean = result.prev_dura_mean
+    param.prev_dura_std = result.prev_dura_std
+    param.prev_dura_count = result.prev_dura_count
 
-    new_dict = {}
-    for key, value in completed_dict.items():
-      new_dict[key] = self.sentence_to_response(value)
-    for idx, s in enumerate(pre_recog):
-      new_dict[f"c{idx}"] = self.sentence_to_response(s)
-    
-    return new_dict
-  
-  async def recognition(
+    await self.__save_data(
+      param,
+      audio = None,
+      prev_audio = result.prev_audio,
+      data_key = f"whisper:{group}:{user}:tdd",
+      audio_key = f"whisper:{group}:{user}:tda",
+      prev_audio_key = f"whisper:{group}:{user}:tdpa"
+    )
+
+    result = DurationResponse(
+      completed = [self.__sentence_to_response(key, value) 
+        for key, value in result.completed_dict.items()],     
+      candidate = [self.__word_to_response(word) 
+       for word in [*result.prev_words, *result.prev_recog]],
+    )
+
+    return result
+
+  async def __transcribe_by_sentence(
     self, 
     audio:np.ndarray, 
-    prompt:str,
+    group:str,
+    user:str,
+    prompt:str = None,
     language:str = None
   ) -> dict:
+    param, p_audio, prev_audio = await self.__load_data(
+      f"whisper:{group}:{user}:tsp",
+      f"whisper:{group}:{user}:tsa",
+      f"whisper:{group}:{user}:tspa"
+    )
+    if p_audio is not None:
+      audio = np.concatenate([p_audio, audio])
+    param = SentenceParams.from_dict(param) if param else SentenceParams()
 
-    sentences = await self.thread_manager_service.submit_to_executor(
-      self.whisper_service.recognition,
-      audio, prompt=prompt, language=language
+    param.audio = audio
+    param.prev_audio = prev_audio
+    param.language = language
+    param.prompt = prompt
+
+    if audio.shape[0] < self.__MIN_AUDIO_DURATION:
+      p_audio = audio
+
+      await self.__save_data(
+        param,
+        audio = p_audio,
+        prev_audio = prev_audio,
+        data_key = f"whisper:{group}:{user}:tsp",
+        audio_key = f"whisper:{group}:{user}:tsa",
+        prev_audio_key = f"whisper:{group}:{user}:tspa"
+      )
+
+      result = SentenceResponse(
+        completed = [],
+        candidate = [],
+      )
+
+      return result
+
+    result, audio = await self.thread_manager_service.submit_to_executor(
+      self.sentence_service.transcribe, param
     )
 
-    new_sentences = []
-    for sentence in sentences:
-      new_sentences.append(self.sentence_to_response(sentence))
+    param.order = result.order
+    param.time_offset = result.time_offset
+    param.prev_audio = result.prev_audio
+    param.prev_sentence = result.prev_sentence
 
-    return new_sentences
+    await self.__save_data(
+      param,
+      audio = None,
+      prev_audio = result.prev_audio,
+      data_key = f"whisper:{group}:{user}:tsp",
+      audio_key = f"whisper:{group}:{user}:tsa",
+      prev_audio_key = f"whisper:{group}:{user}:tspa"
+    )
 
-  def sentence_to_response(self, sentence:WhisperSentence) -> Sentence:
+    result = SentenceResponse(
+      completed = [self.__sentence_to_response(key, value)
+       for key, value in result.completed_dict.items()],
+      candidate = [self.__word_to_response(key) for key in result.prev_recog],
+    )
+
+    return result
+
+  async def __transcribe(
+    self,
+    audio:np.ndarray,
+    prompt:str = None,
+    lanuage:str = None,
+  ):
+    
+    result = await self.thread_manager_service.submit_to_executor(
+      self.service.transcribe, audio, lanuage, prompt
+    )
+
+    new_result = []
+    for i, sentence in enumerate(result):
+      new_result.append(self.__sentence_to_response(i, sentence))
+
+    return new_result
+
+  def __sentence_to_response(self, order:int, sentence:WhisperSentence) -> Sentence:
     return Sentence(
-        lang = sentence.lang,
-        text = sentence.text,
-        words = [
-          Word(
-            start = word.start,
-            end = word.end,
-            text = word.text
-          ) for word in sentence.words
-        ]
-      )
+      order = order,
+      lang = sentence.lang,
+      text = sentence.text,
+      words = [
+        self.__word_to_response(word) for word in sentence.words
+      ]
+    )
+
+  def __word_to_response(self, word:WhisperWord) -> Word:
+    return Word(
+      start = word.start,
+      end = word.end,
+      text = word.text,
+      lang = word.lang
+    )
       
-  async def recognition_files(self, params: SttFile) -> dict:
+  async def transcribe_from_file(self, params: SttFile) -> dict:
     audio = await params.audio.read()
     audio = audio_to_np(audio, self.__SAMPLE_RATE)
 
-    return await self.recognition(audio, prompt = params.prompt, language=params.language)
+    return await self.__transcribe(audio, prompt = params.prompt, language=params.language)
 
-  async def recognition_bytes(self, params: SttByte) -> dict:
+  async def transcribe_from_byte(self, params: SttByte) -> dict:
     audio = base64.b64decode(params.audio)
     audio = io.BytesIO(audio)
     audio = audio_to_np(audio, self.__SAMPLE_RATE)
 
-    return await self.recognition(audio, prompt = params.prompt, language=params.language)
+    return await self.__transcribe(audio, prompt = params.prompt, language=params.language)
 
-  async def recognition_step_bytes(self, params: SttStepByte) -> dict:
+  async def transcribe_by_duration_from_byte(self, params: SttDuration) -> dict:
     audio = base64.b64decode(params.audio)
     audio = io.BytesIO(audio)
     audio = audio_to_np(audio, self.__SAMPLE_RATE)
 
-    return await self.recognition_step(
+    return await self.__transcribe_by_duration(
       audio, 
       group=params.group, user=params.user,
-      prompt = params.prompt, 
       language=params.language
     )
