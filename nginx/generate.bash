@@ -23,8 +23,9 @@ fi
 # certbot 설치 여부 확인
 if ! command -v certbot &> /dev/null; then
   echo "⚙️ certbot not found. Installing..."
-  sudo apt update
-  sudo apt install -y certbot python3-certbot-nginx
+  apt update
+  apt install -y certbot python3-certbot-dns-cloudflare
+  pip install certbot
 
   if [ $? -ne 0 ]; then
     echo "❌ Failed to install certbot. Exiting."
@@ -34,20 +35,17 @@ fi
 
 # 인증서 발급 시도
 echo "▶️ Issuing certificate for domain: $DOMAIN"
-sudo certbot certonly --webroot \
-  --webroot-path /var/www/certbot \
-  -d "$DOMAIN" \
-  --email "$EMAIL" \
-  --agree-tos \
-  --no-eff-email \
-  --non-interactive
+certbot certonly \
+  --dns-cloudflare \
+  --dns-cloudflare-credentials "cf-token.ini" \
+  -d $DOMAIN
 
 # 발급 성공 여부 확인
 if [ $? -eq 0 ]; then
   mkdir -p "./certbot/conf/$DOMAIN"
   mkdir -p "./certbot/renewal"
-  cp -L "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" "./certbot/conf/$DOMAIN/fullchain.crt"
-  cp -L "/etc/letsencrypt/live/$DOMAIN/privkey.pem" "./certbot/conf/$DOMAIN/privkey.key"
+  cp -L "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" "./certbot/conf/$DOMAIN/fullchain.pem"
+  cp -L "/etc/letsencrypt/live/$DOMAIN/privkey.pem" "./certbot/conf/$DOMAIN/privkey.pem"
   cp "/etc/letsencrypt/renewal/$DOMAIN.conf" "./certbot/renewal/$DOMAIN.conf"
 
   echo "✅ Certificate issued for $DOMAIN."

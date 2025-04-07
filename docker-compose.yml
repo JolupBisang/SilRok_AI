@@ -1,4 +1,4 @@
-name: SilRokAIServer
+name: SilRokAI
 services:
   app:
     build:

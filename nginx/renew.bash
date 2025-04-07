@@ -17,8 +17,9 @@ fi
 # certbot 설치 여부 확인
 if ! command -v certbot &> /dev/null; then
   echo "⚙️ certbot not found. Installing..."
-  sudo apt update
-  sudo apt install -y certbot python3-certbot-nginx
+  apt update
+  apt install -y certbot python3-certbot-dns-cloudflare
+  pip install certbot
 
   if [ $? -ne 0 ]; then
     echo "❌ Failed to install certbot. Exiting."
@@ -28,7 +29,7 @@ fi
 
 # 인증서 갱신 시도
 echo "▶️ Starting certbot renewal for domain: $DOMAIN"
-sudo certbot renew --quiet --cert-name "$DOMAIN"
+certbot renew --quiet --cert-name "$DOMAIN"
 
 # 갱신 성공 여부 확인
 if [ $? -eq 0 ]; then

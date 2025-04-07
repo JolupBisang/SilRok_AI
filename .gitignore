@@ -175,6 +175,9 @@ cython_debug/
 
 .data/**
 
-.nginx/certbot/conf/**
-.nginx/certbot/renewal/**
-.nginx/certbot/www/**
+nginx/certbot/conf/**
+nginx/certbot/renewal/**
+nginx/certbot/www/**
+
+.model/**
+nginx/*.ini
