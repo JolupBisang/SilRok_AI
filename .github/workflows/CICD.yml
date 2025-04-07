@@ -16,26 +16,24 @@ jobs:
       - name: Stop existing container (if running)
         run: |
           if [ "$(docker ps -q -f name=SilRokAIServer)" ]; then
-            docker stop SilRokAIServer
+            docker compose -f .server/docker-compose.yml down
           fi
 
       - name: CI
         run: |
-          # pip install -r .devcontainer/requirements.txt
-          # pytest tests/
-          # docker compose -f docker-compose.test.yml -p SilRokAIServerTest up --build --abort-on-container-exit --exit-code-from dev
+          docker compose -f .server/docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from dev
         continue-on-error: true
 
       - name: Remove CI files
         if: always()
         run: |
-          # docker compose -f docker-compose.test.yml -p SilRokAIServerTest down --rmi all --volumes --remove-orphans || true
+          docker compose -f .server/docker-compose.test.yml down --rmi all --volumes --remove-orphans || true
 
       - name: Restore old container if CI fails
         if: failure()
         run: |
           if [ "$(docker ps -q -a -f name=SilRokAIServer)" ]; then
-            docker start SilRokAIServer
+            docker compose -f .server/docker-compose.yml up -d
           fi
 
   CD:
@@ -47,9 +45,9 @@ jobs:
 
       - name: Docker
         run: |
-          docker compose down
-          docker compose build
-          docker compose up -d
+          docker compose -f .server/docker-compose.yml down
+          docker compose -f .server/docker-compose.yml build
+          docker compose -f .server/docker-compose.yml up -d
     
       - name: Send Success Mail
         if: success()
