@@ -23,7 +23,7 @@
             },
             "options": {
                 "env": {
-                    "PYTHONPATH": "${workspaceFolder}/app"
+                    "PYTHONPATH":"${workspaceFolder}/app:${workspaceFolder}/RTWhisper/modules"
                 }
             },
             "problemMatcher": []

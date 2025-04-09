@@ -3,13 +3,15 @@ import io
 import numpy as np
 import json
 
+from RTWhisper.whisper import SentenceParams, WordParams, WordService, SentenceService, Service
+from RTWhisper.whisper import Sentence as WhisperSentence
+from RTWhisper.whisper import Word as WhisperWord
+
 from ServerObject import ServerObject
 from core import RedisByteManager, RedisStrManager, settings
 from schemas.whisper import DurationResponse, Sentence, SentenceResponse, SttByte, SttFile, SttDuration, Word
 from services import ThreadManagerService
-from services.whisper import SentenceParams, WordParams, WordService, SentenceService, Service
-from services.whisper import Sentence as WhisperSentence
-from services.whisper import Word as WhisperWord
+
 from util.util import audio_to_np
 
 class WhisperUC(ServerObject):

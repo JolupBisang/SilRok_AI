@@ -22,7 +22,7 @@
             "cwd": "${workspaceFolder}",
             "justMyCode": true,
             "env": {
-                "PYTHONPATH":"${workspaceFolder}/app"
+                "PYTHONPATH":"${workspaceFolder}/app:${workspaceFolder}/RTWhisper/modules"
             }
         }
     ]

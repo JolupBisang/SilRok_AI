@@ -1,7 +1,6 @@
 from core import RedisByteManager, RedisStrManager
 from fastapi import FastAPI
 
-import logging
 from logging import Logger
 from services import ThreadManagerService, LoggerService
 from models import Whisper
