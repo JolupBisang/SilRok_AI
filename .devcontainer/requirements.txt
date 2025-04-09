@@ -10,6 +10,7 @@ tqdm
 fastapi
 uvicorn[standard]
 python-multipart
+python-dotenv
 
 # torch
 torch
@@ -34,3 +35,12 @@ rich
 
 # jwt
 pyjwt[crypto]
+
+# gemini
+google-generativeai
+
+# Silero VAD
+silero-vad
+
+# pyannote
+pyannote.audio

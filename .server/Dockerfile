@@ -15,6 +15,5 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip \
   && rm /requirements.txt
 
 COPY . /workspaces/app
-COPY .model /root/.cache
 
 CMD ["/usr/bin/python3", "/workspaces/app/app/main.py"]

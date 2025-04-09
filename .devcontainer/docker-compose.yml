@@ -1,4 +1,4 @@
-name: SilRokAIServer-Dev
+name: SilRokAI-Dev
 services:
   dev:
     build:
@@ -6,6 +6,8 @@ services:
       dockerfile: .devcontainer/Dockerfile
     volumes:
       - ../:/workspaces/dev
+      - ../.model/huggingface:/root/.cache/huggingface
+      - ../.model/torch:/root/.cache/torch
     deploy:
       resources:
         reservations:

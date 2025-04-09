@@ -4,6 +4,9 @@ services:
     build:
       context: ..
       dockerfile: .server/Dockerfile
+    volumes:
+      - ../.model/huggingface:/root/.cache/huggingface
+      - ../.model/torch:/root/.cache/torch
     deploy:
       resources:
         reservations:
