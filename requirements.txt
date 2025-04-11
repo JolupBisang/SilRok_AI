@@ -34,3 +34,12 @@ rich
 
 # jwt
 pyjwt[crypto]
+
+# gemini
+google-generativeai
+
+# Silero VAD
+silero-vad
+
+# pyannote
+pyannote.audio
