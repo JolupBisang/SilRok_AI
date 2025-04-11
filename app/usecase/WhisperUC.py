@@ -3,29 +3,31 @@ import io
 import numpy as np
 import json
 
+from RTWhisper import Transcriber, TokenStreamer, SentenceStreamer
+from RTWhisper.data import Param, Result, Token
+from RTWhisper.data import Sentence as WhisperSentence
+
 from ServerObject import ServerObject
 from core import RedisByteManager, RedisStrManager, settings
 from schemas.whisper import DurationResponse, Sentence, SentenceResponse, SttByte, SttFile, SttDuration, Word
 from services import ThreadManagerService
-from services.whisper import SentenceParams, WordParams, WordService, SentenceService, Service
-from services.whisper import Sentence as WhisperSentence
-from services.whisper import Word as WhisperWord
-from util.util import audio_to_np
+
+from util.util import bytes_to_np, decompress_from_opus
 
 class WhisperUC(ServerObject):
 
   @ThreadManagerService.object
-  @WordService.object
-  @SentenceService.object
-  @Service.object
+  @Transcriber.object
+  @TokenStreamer.object
+  @SentenceStreamer.object
   @RedisByteManager.object
   @RedisStrManager.object
   def __init__(
     self,
     thread_manager_service:ThreadManagerService, 
-    word_service:WordService,
-    sentence_service:SentenceService,
-    service:Service,
+    transcriber:Transcriber,
+    token_streamer:TokenStreamer,
+    sentence_streamer:SentenceStreamer,
     redis_byte_manager:RedisByteManager,
     redis_str_manager:RedisStrManager,
     sample_rate:int = settings.MODEL_SAMPLE_RATE,
@@ -37,9 +39,9 @@ class WhisperUC(ServerObject):
     self.__MIN_AUDIO_DURATION = min_audio_duration
 
     self.thread_manager_service = thread_manager_service
-    self.word_service = word_service
-    self.sentence_service = sentence_service
-    self.service = service
+    self.transcriber = transcriber
+    self.token_streamer = token_streamer
+    self.sentence_streamer = sentence_streamer
     self.redis_byte_manager = redis_byte_manager
     self.redis_str_manager = redis_str_manager
     
@@ -85,19 +87,17 @@ class WhisperUC(ServerObject):
       f"whisper:{group}:{user}:tda",
       f"whisper:{group}:{user}:tdpa"
     )
-    param = WordParams.from_dict(param) if param else WordParams()
+    param = Param.from_dict(param) if param else Param()
     if p_audio is not None:
       audio = np.concatenate([p_audio, audio])
     param.audio = audio
-    param.prev_audio = prev_audio
+    param.prev_processed_audio = prev_audio
     param.language = language
 
     if audio.shape[0] < self.__MIN_AUDIO_DURATION:
-      p_audio = audio
-
       await self.__save_data(
         param,
-        audio = p_audio,
+        audio = audio,
         prev_audio = prev_audio,
         data_key = f"whisper:{group}:{user}:tdd",
         audio_key = f"whisper:{group}:{user}:tda",
@@ -111,26 +111,16 @@ class WhisperUC(ServerObject):
 
       return result
       
-    result, _ = await self.thread_manager_service.submit_to_executor(
-      self.word_service.transcribe, param
+    result:Result = await self.thread_manager_service.submit_to_executor(
+      self.token_streamer.process , param
     )
 
-    param.order = result.order
-    param.time_offset = result.time_offset
-    param.prev_audio = result.prev_audio
-    param.prev_words = result.prev_words
-    param.prev_recog = result.prev_recog
-    param.prev_prob_mean = result.prev_prob_mean
-    param.prev_prob_std = result.prev_prob_std
-    param.prev_prob_count = result.prev_prob_count
-    param.prev_dura_mean = result.prev_dura_mean
-    param.prev_dura_std = result.prev_dura_std
-    param.prev_dura_count = result.prev_dura_count
+    param.update(result)
 
     await self.__save_data(
       param,
       audio = None,
-      prev_audio = result.prev_audio,
+      prev_audio = param.prev_processed_audio,
       data_key = f"whisper:{group}:{user}:tdd",
       audio_key = f"whisper:{group}:{user}:tda",
       prev_audio_key = f"whisper:{group}:{user}:tdpa"
@@ -138,8 +128,8 @@ class WhisperUC(ServerObject):
 
     result = DurationResponse(
       completed = [self.__sentence_to_response(key, value) 
-        for key, value in result.completed_dict.items()],     
-      candidate = [self.__word_to_response(word) 
+        for key, value in result.completed.items()],     
+      candidate = [self.__token_to_response(word) 
        for word in [*result.prev_words, *result.prev_recog]],
     )
 
@@ -160,19 +150,17 @@ class WhisperUC(ServerObject):
     )
     if p_audio is not None:
       audio = np.concatenate([p_audio, audio])
-    param = SentenceParams.from_dict(param) if param else SentenceParams()
+    param = Param.from_dict(param) if param else Param()
 
     param.audio = audio
-    param.prev_audio = prev_audio
+    param.prev_processed_audio = prev_audio
     param.language = language
     param.prompt = prompt
 
     if audio.shape[0] < self.__MIN_AUDIO_DURATION:
-      p_audio = audio
-
       await self.__save_data(
         param,
-        audio = p_audio,
+        audio = audio,
         prev_audio = prev_audio,
         data_key = f"whisper:{group}:{user}:tsp",
         audio_key = f"whisper:{group}:{user}:tsa",
@@ -186,19 +174,16 @@ class WhisperUC(ServerObject):
 
       return result
 
-    result, audio = await self.thread_manager_service.submit_to_executor(
-      self.sentence_service.transcribe, param
+    result:Result = await self.thread_manager_service.submit_to_executor(
+      self.sentence_streamer.process , param
     )
 
-    param.order = result.order
-    param.time_offset = result.time_offset
-    param.prev_audio = result.prev_audio
-    param.prev_sentence = result.prev_sentence
+    param.update(result)
 
     await self.__save_data(
       param,
       audio = None,
-      prev_audio = result.prev_audio,
+      prev_audio = param.prev_processed_audio,
       data_key = f"whisper:{group}:{user}:tsp",
       audio_key = f"whisper:{group}:{user}:tsa",
       prev_audio_key = f"whisper:{group}:{user}:tspa"
@@ -206,8 +191,8 @@ class WhisperUC(ServerObject):
 
     result = SentenceResponse(
       completed = [self.__sentence_to_response(key, value)
-       for key, value in result.completed_dict.items()],
-      candidate = [self.__word_to_response(key) for key in result.prev_recog],
+       for key, value in result.completed.items()],
+      candidate = [self.__token_to_response(key) for key in result.prev_recog],
     )
 
     return result
@@ -216,18 +201,23 @@ class WhisperUC(ServerObject):
     self,
     audio:np.ndarray,
     prompt:str = None,
-    lanuage:str = None,
+    language:str = None,
   ):
+
+    param = Param()
+    param.audio = audio
+    param.language = language
+    param.prompt = prompt
     
-    result = await self.thread_manager_service.submit_to_executor(
-      self.service.transcribe, audio, lanuage, prompt
+    result:Result = await self.thread_manager_service.submit_to_executor(
+      self.transcriber.process, param
     )
 
-    new_result = []
-    for i, sentence in enumerate(result):
-      new_result.append(self.__sentence_to_response(i, sentence))
+    completed = []
+    for k, v in result.completed.items():
+      completed.append(self.__sentence_to_response(k, v))
 
-    return new_result
+    return completed
 
   def __sentence_to_response(self, order:int, sentence:WhisperSentence) -> Sentence:
     return Sentence(
@@ -235,35 +225,35 @@ class WhisperUC(ServerObject):
       lang = sentence.lang,
       text = sentence.text,
       words = [
-        self.__word_to_response(word) for word in sentence.words
+        self.__token_to_response(token) for token in sentence.tokens
       ]
     )
 
-  def __word_to_response(self, word:WhisperWord) -> Word:
+  def __token_to_response(self, token:Token) -> Word:
     return Word(
-      start = word.start,
-      end = word.end,
-      text = word.text,
-      lang = word.lang
+      start = token.start,
+      end = token.end,
+      text = token.text,
+      lang = token.lang
     )
       
   async def transcribe_from_file(self, params: SttFile) -> dict:
     audio = await params.audio.read()
-    audio = audio_to_np(audio, self.__SAMPLE_RATE)
+    audio = bytes_to_np(io.BytesIO(audio), self.__SAMPLE_RATE)
+    audio = np.mean(audio, axis=1) if audio.ndim > 1 else audio
 
     return await self.__transcribe(audio, prompt = params.prompt, language=params.language)
 
   async def transcribe_from_byte(self, params: SttByte) -> dict:
-    audio = base64.b64decode(params.audio)
-    audio = io.BytesIO(audio)
-    audio = audio_to_np(audio, self.__SAMPLE_RATE)
+    audio = base64.b64decode(params.audio.encode("utf-8"))
+    audio = bytes_to_np(io.BytesIO(audio), self.__SAMPLE_RATE)
 
     return await self.__transcribe(audio, prompt = params.prompt, language=params.language)
 
   async def transcribe_by_duration_from_byte(self, params: SttDuration) -> dict:
-    audio = base64.b64decode(params.audio)
-    audio = io.BytesIO(audio)
-    audio = audio_to_np(audio, self.__SAMPLE_RATE)
+    audio = base64.b64decode(params.audio.encode("utf-8"))
+    audio, _ = decompress_from_opus(audio)
+    audio = bytes_to_np(io.BytesIO(audio), self.__SAMPLE_RATE)
 
     return await self.__transcribe_by_duration(
       audio, 

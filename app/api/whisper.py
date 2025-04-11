@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from schemas.whisper import DurationResponse, Sentence, SttByte, SttFile, SttDuration
-from usecase.WhisperUC import WhisperUC
+from usecase import WhisperUC
 
 router = APIRouter()
 
