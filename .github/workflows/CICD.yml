@@ -11,10 +11,10 @@ jobs:
     runs-on: selabserver
     steps:
       - name: Checkout
+        uses: actions/checkout@v4
         with:
           clean: false
           submodules: recursive
-        uses: actions/checkout@v4
 
       - name: Stop existing container (if running)
         run: |
@@ -45,10 +45,10 @@ jobs:
     needs: CI
     steps:
       - name: Checkout
+        uses: actions/checkout@v4
         with:
           clean: false
           submodules: recursive
-        uses: actions/checkout@v4
 
       - name: Docker
         run: |
