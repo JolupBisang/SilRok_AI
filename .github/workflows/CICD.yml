@@ -40,7 +40,7 @@ jobs:
           fi
 
   CD:
-    if: gihub.event_name != 'pull_request'
+    if: github.event_name != 'pull_request'
     runs-on: selabserver
     needs: CI
     steps:
