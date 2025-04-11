@@ -3,15 +3,16 @@ from fastapi import FastAPI
 
 from logging import Logger
 from services import ThreadManagerService, LoggerService
-from models import Whisper
+from usecase import WhisperUC
 
 @LoggerService.object
 def startup(app:FastAPI, logger_service:Logger):
 
   ThreadManagerService.get_instance()
-  Whisper.get_instance()
   RedisByteManager.get_instance()
   RedisStrManager.get_instance()
+
+  WhisperUC.get_instance()
 
   # logging.getLogger("uvicorn").setLevel(logging.WARNING)
   # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
