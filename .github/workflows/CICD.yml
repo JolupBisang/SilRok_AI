@@ -11,10 +11,11 @@ jobs:
     runs-on: selabserver
     steps:
       - name: Checkout
+        uses: actions/checkout@v4
         with:
           clean: false
           submodules: recursive
-        uses: actions/checkout@v4
+          fetch-depth: 0
 
       - name: Stop existing container (if running)
         run: |
@@ -40,15 +41,16 @@ jobs:
           fi
 
   CD:
-    if: gihub.event_name != 'pull_request'
+    if: github.event_name != 'pull_request'
     runs-on: selabserver
     needs: CI
     steps:
       - name: Checkout
+        uses: actions/checkout@v4
         with:
           clean: false
           submodules: recursive
-        uses: actions/checkout@v4
+          fetch-depth: 0
 
       - name: Docker
         run: |
