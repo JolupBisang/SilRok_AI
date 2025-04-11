@@ -32,14 +32,15 @@ jobs:
         run: |
           docker compose -f .server/docker-compose.test.yml down --rmi all --volumes --remove-orphans || true
 
-      - name: Restore old container if CI fails
-        if: failure()
+      - name: Restore old container
+        if: always()
         run: |
           if [ "$(docker ps -q -a -f name=SilRokAIServer)" ]; then
             docker compose -f .server/docker-compose.yml up -d
           fi
 
   CD:
+    if: gihub.event_name != 'pull_request'
     runs-on: selabserver
     needs: CI
     steps:
