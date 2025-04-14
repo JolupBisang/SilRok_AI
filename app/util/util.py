@@ -31,8 +31,8 @@ def decompress_from_opus(bytes: bytes) -> bytes:
   out, err = process.communicate(input=bytes)
   return out, err
 
-def bytes_to_np(btys:io.BytesIO, sample_rate:int) -> np.ndarray:
-  with btys as buffer:
+def bytes_to_np(btys:bytes, sample_rate:int) -> np.ndarray:
+  with io.BytesIO(btys) as buffer:
     audio, sr = sf.read(buffer, dtype='float32')
   if sr != sample_rate:
     audio = resample_poly(audio, sample_rate, sr)

@@ -1,7 +1,9 @@
 # usecase/__init__.py
 
-from .WhisperUC import WhisperUC
+from .ASRUC import ASRUC
+from .DiarizedASRUC import DiarizedASRUC
 
 __all__ = [
-  "WhisperUC",
+  "ASRUC",
+  "DiarizedASRUC",
 ]

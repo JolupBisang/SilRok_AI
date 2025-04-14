@@ -1,8 +1,13 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class settings:
   PROJECT_NAME = "SilRok AI server"
   PROJECT_VERSION = "0.1.0"
 
-  THREAD_MAX_WORKERS = 20
+  THREAD_MAX_WORKERS = 8
 
   MODEL_SAMPLE_RATE = 16000 # 16kHz
   MIN_AUDIO_DURATION = 3 * MODEL_SAMPLE_RATE # 4 seconds
@@ -22,3 +27,10 @@ class settings:
   REDIS_BYTE_TTL = 10
   REDIS_BYTE_MAX_MEMORY = "10mb"
   REDIS_STR_MAX_MEMORY_POLICY = "noeviction" 
+
+  HF_TOKEN = os.getenv("HF_TOKEN", None)
+
+  DIARIZATION_MAX_REFER = 20
+  
+  SOCKET_UC_MAX_BUFFER = 20
+  SOCKET_UC_MAX_CONNECTIONS = 1

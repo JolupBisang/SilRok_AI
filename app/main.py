@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import whisper, main
+from api import asr, main
 from core.lifecycle import shutdown, startup
 from core.config import settings
 
@@ -33,10 +33,17 @@ def server() -> FastAPI:
 
   # 라우터 등록 (API 엔드포인트)
   app.include_router(main.router, prefix="", tags=["Users"])
-  app.include_router(whisper.router, prefix="/whisper", tags=["AI"])
+  app.include_router(asr.router, prefix="/asr", tags=["AI"])
   return app
 
 # FastAPI 실행 (uvicorn으로 실행하면 필요 없음)
 if __name__ == "__main__":
   import uvicorn
-  uvicorn.run(server(), host="0.0.0.0", port=8000)
+  uvicorn.run(
+    server(), 
+    host="0.0.0.0", 
+    port=8000,
+    ws_ping_interval= 30,
+    ws_ping_timeout= None,# 60
+    log_level="debug"
+  )
