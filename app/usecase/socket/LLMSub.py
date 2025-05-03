@@ -18,7 +18,7 @@ class LLMSub:
         self.thread_manager_service = thread_manager_service
 
     def service(self, llm_context: LLMContext, arc: AlignedRedisContext):
-        llm_context.conversation = [s.sentence.text for s in arc.speaks]
+        llm_context.conversation = [f"{s.user_id}: {s.sentence.text}" for s in arc.speaks]
         self.llm_service.send_msg(llm_context)
 
     def async_service(

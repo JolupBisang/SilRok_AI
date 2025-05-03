@@ -111,12 +111,12 @@ class LLMContext:
 
     def extract_tagged_feedback(self):
         text = self._response
-        feedback_match = re.search(
+        feedback_matches = re.findall(
             r"<correction name=\"(.*?)\">(.*?)</correction>", text, re.DOTALL
         )
-        if not feedback_match:
-            for name, comment in feedback_match:
-                self.feedback[name] = comment.strip()
+
+        for name, comment in feedback_matches:
+            self.feedback[name] = comment.strip()
 
     def to_dict(self):
         return {
