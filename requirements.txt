@@ -12,6 +12,8 @@ uvicorn[standard]
 python-multipart
 python-dotenv
 msgpack
+beartype
+pydantic
 
 # torch
 torch

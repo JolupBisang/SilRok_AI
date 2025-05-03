@@ -1,15 +1,20 @@
 # services/__init__.py
 
-from .ASRService import ASRService
+# folders
+from . import asr
+from . import diarization
+from . import LLM
+from . import redis
+
+# files
 from .LoggerService import LoggerService
 from .ThreadManagerService import ThreadManagerService
-from .RedisService import RedisService
-from .DiarizationService import DiarizationService
 
 __all__ = [
-    "ASRService",
+    "asr",
+    "diarization",
+    "LLM",
+    "redis",
     "LoggerService",
     "ThreadManagerService",
-    "RedisService",
-    "DiarizationService",
 ]

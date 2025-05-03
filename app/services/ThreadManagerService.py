@@ -6,20 +6,21 @@ from typing import Callable, Set
 from ServerObject import ServerObject
 from core.config import settings
 
+
 class ThreadManagerService(ServerObject):
-  def __init__(self, max_workers: int = settings.THREAD_MAX_WORKERS):
-    super().__init__()
-    self.__executor = ThreadPoolExecutor(max_workers=max_workers)
-    self.__running_futures: Set[Future] = set()
+    def __init__(self, max_workers: int = settings.THREAD_MAX_WORKERS):
+        super().__init__()
+        self.__executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.__running_futures: Set[Future] = set()
 
-  def submit_to_executor(self, fn:Callable, *args, **kargs) -> asyncio.Future:
-    fut = self.__executor.submit(fn, *args, **kargs)
-    afut = asyncio.wrap_future(fut)
-    self.__running_futures.add(afut)
-    afut.add_done_callback(self.__running_futures.remove)
-    return afut
+    def submit_to_executor(self, fn: Callable, *args, **kargs) -> asyncio.Future:
+        fut = self.__executor.submit(fn, *args, **kargs)
+        afut = asyncio.wrap_future(fut)
+        self.__running_futures.add(afut)
+        afut.add_done_callback(self.__running_futures.remove)
+        return afut
 
-  async def close(self) -> None:
-    if self.__running_futures:
-      await asyncio.gather(*self.__running_futures, return_exceptions=True)
-    self.__executor.shutdown(wait=True)
+    async def close(self) -> None:
+        if self.__running_futures:
+            await asyncio.gather(*self.__running_futures, return_exceptions=True)
+        self.__executor.shutdown(wait=True)

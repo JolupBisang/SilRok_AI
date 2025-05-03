@@ -4,27 +4,31 @@ from util.util import camel_to_snake
 
 T = TypeVar("T", bound="ServerObject")
 
+
 class ServerObject:
-  implementation:"ServerObject" = None
-  
-  def __init__(self) -> None:
-    cls = self.__class__
-    if cls.implementation is not None:
-      raise Exception(f"{self.__class__.__name__} is a singleton class. Use ServerObject.get_instance() instead.")
+    implementation: "ServerObject" = None
 
-    cls.implementation = self
+    def __init__(self) -> None:
+        cls = self.__class__
+        if cls.implementation is not None:
+            raise Exception(
+                f"{self.__class__.__name__} is a singleton class. Use ServerObject.get_instance() instead."
+            )
 
-  @classmethod
-  def get_instance(cls: Type[T], *args, **kwargs) -> T:
-    if cls.implementation is None:
-      cls(*args, **kwargs)
-    return cast(T, cls.implementation)
+        cls.implementation = self
 
-  @classmethod
-  def object(cls, func:Any) -> Callable[..., Any]:
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> Any:
-      self = cls.get_instance()
-      kwargs[camel_to_snake(self.__class__.__name__)] = self
-      return func(*args, **kwargs)
-    return wrapper
+    @classmethod
+    def get_instance(cls: Type[T], *args, **kwargs) -> T:
+        if cls.implementation is None:
+            cls(*args, **kwargs)
+        return cast(T, cls.implementation)
+
+    @classmethod
+    def object(cls, func: Any) -> Callable[..., Any]:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            self = cls.get_instance()
+            kwargs[camel_to_snake(self.__class__.__name__)] = self
+            return func(*args, **kwargs)
+
+        return wrapper

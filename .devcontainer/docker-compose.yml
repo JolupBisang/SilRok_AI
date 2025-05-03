@@ -1,33 +1,33 @@
 name: SilRokAI-Dev
 services:
-  dev:
-    build:
-      context: ..
-      dockerfile: .devcontainer/Dockerfile
-    volumes:
-      - ../:/workspaces/dev
-      - ../.model/huggingface:/root/.cache/huggingface
-      - ../.model/torch:/root/.cache/torch
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    ports:
-      - "8000:8000"
-    command: ["tail", "-f", "/dev/null"]  
-    depends_on:
-      - redis_str
-      - redis_byte
-  
-  redis_str:
-    image: redis:latest
-    ports:
-      - "6379:6379"
+    dev:
+        build:
+            context: ..
+            dockerfile: .devcontainer/Dockerfile
+        volumes:
+            - ../:/workspaces/dev
+            - ../.model/huggingface:/root/.cache/huggingface
+            - ../.model/torch:/root/.cache/torch
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+        ports:
+            - "8000:8000"
+        command: ["tail", "-f", "/dev/null"]
+        depends_on:
+            - redis_str
+            - redis_byte
 
-  redis_byte:
-    image: redis:latest
-    ports:
-      - "6380:6379"
+    redis_str:
+        image: redis:latest
+        ports:
+            - "6379:6379"
+
+    redis_byte:
+        image: redis:latest
+        ports:
+            - "6380:6379"
