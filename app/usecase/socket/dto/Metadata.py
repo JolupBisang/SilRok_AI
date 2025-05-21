@@ -5,7 +5,7 @@ from typing import Union
 
 import numpy as np
 
-from core import settings
+from core import Settings
 from util.util import bytes_to_np, decompress_from_opus
 
 from .flag import *
@@ -38,7 +38,7 @@ class Metadata:
         if len(data) == 0:
             return np.zeros((0,), dtype=np.float32)
         audio, _ = decompress_from_opus(data)
-        audio = bytes_to_np(data, settings.MODEL_SAMPLE_RATE)
+        audio = bytes_to_np(data, Settings.MODEL_SAMPLE_RATE)
         audio = audio.astype(np.float32)
         return audio
 
@@ -84,11 +84,11 @@ class Metadata:
         dic, left = Metadata.__get_json(data)
         metadata = Metadata.from_dict(dic)
 
-        if metadata.flag in DATA_IS_AUDIO:
+        if metadata.flag == DIARIZATION_ASR:
             metadata.audio = Metadata.__get_audio(left)
-        elif metadata.flag in DATA_IS_REFER:
+        elif metadata.flag == DIARIZATION_REFER:
             metadata.refer = Metadata.__get_refer(left)
-        elif metadata.flag in DATA_IS_METADATA:
+        elif metadata.flag == METADATA:
             metadata.metadata = Metadata.__get_metadata(left)
 
         return metadata

@@ -1,9 +1,10 @@
-# services/LLM/__init__.py
+# services/llm/__init__.py
 
-from .LLMService import LLMService
-from . import dto
+from .llm_service import LLMService
+from .dto import LLMInput, LLMOutput
 
 __all__ = [
-  "LLMService",
-  "dto"
+    "LLMInput",
+    "LLMOutput",
+    "LLMService",
 ]

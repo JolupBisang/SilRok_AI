@@ -1,7 +1,21 @@
 # core/__init__.py
 
-from .config import settings
-from .RedisByteManager import RedisByteManager
-from .RedisStrManager import RedisStrManager
+import logging
 
-__all__ = ["settings", "RedisByteManager", "RedisStrManager"]
+from .settings import Settings
+from .singleton import Singleton
+from .async_manager import AsyncManager
+from . import redis
+from . import logging_manager
+
+# logger = logging_manager.generate("core", logging.DEBUG)
+logger = logging_manager.generate("core", logging.INFO)
+
+__all__ = [
+    "Settings",
+    "Singleton",
+    "AsyncManager",
+    "redis",
+    "logger",
+    "logging_manager",
+]

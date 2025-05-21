@@ -4,6 +4,7 @@ services:
         build:
             context: ..
             dockerfile: .devcontainer/Dockerfile
+        shm_size: '16gb'
         volumes:
             - ../:/workspaces/dev
             - ../.model/huggingface:/root/.cache/huggingface

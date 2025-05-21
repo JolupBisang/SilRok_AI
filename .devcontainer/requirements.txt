@@ -10,6 +10,7 @@ python-dotenv
 msgpack
 pydantic
 beartype
+ray
 
 # torch
 torch

@@ -9,6 +9,7 @@ class Word(BaseModel):
     text: str
     lang: str
 
+    # TODO 여기에 생성하는 것은 옳지 않음
     @staticmethod
     def get_from_token(token: Token):
         return Word(start=token.start, end=token.end, text=token.text, lang=token.lang)

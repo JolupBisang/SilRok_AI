@@ -37,6 +37,14 @@ async def embedding(request: Request):
 
 
 @router.websocket("/ws")
-async def socket(websocket: WebSocket):
+async def websocket(websocket: WebSocket):
+    uc = SocketUC.get_instance()
+    await uc.add(websocket)
+
+
+@router.websocket("/ws/{type}")
+async def socket(websocket: WebSocket, type: str):
+    if type not in ["msgpack", "json"]:
+        type = "msgpack"
     uc = SocketUC.get_instance()
     await uc.add(websocket)

@@ -1,7 +1,5 @@
 # usecase/socket/__init__.py
 
-from .SocketUC import SocketUC
+from .llm_uc import LLMUC as SocketUC
 
-from . import dto
-
-__all__ = ["SocketUC", "dto"]
+__all__ = ["SocketUC"]

@@ -28,7 +28,9 @@
                 "foxundermoon.shell-format",
                 "gruntfuggly.todo-tree",
                 "editorconfig.editorconfig",
-                "ms-python.black-formatter"
+                "ms-python.black-formatter",
+                "jebbs.plantuml",
+                "claudineyqr.plantuml-snippets"
             ]
         }
     }

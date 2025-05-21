@@ -1,38 +1,35 @@
 import numpy as np
-from logging import Logger
 from fastapi import FastAPI
 
+from core import logger
 from RTWhisper.models import Whisper
 from RTWhisper.data import Context
-from services import ThreadManagerService, LoggerService
 from usecase.asr import ASRUC
-from usecase.socket import SocketUC
 from usecase.diarization import DiarizationUC
+from usecase.socket import SocketUC
 
 
-@LoggerService.object
-def startup(app: FastAPI, logger_service: Logger):
+async def startup(app: FastAPI):
 
-    SocketUC.get_instance()
     DiarizationUC.get_instance()
     ASRUC.get_instance()
+    socket_uc = SocketUC.get_instance()
+    await socket_uc.init()
+
     whisper_run()
 
     # logging.getLogger("uvicorn").setLevel(logging.WARNING)
     # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     # logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
 
-    logger_service.info("🚀 FastAPI 서버 시작!")
+    logger.info("🚀 FastAPI 서버 시작!")
 
 
-@LoggerService.object
-@ThreadManagerService.object
-def shutdown(
-    app: FastAPI, logger_service: Logger, thread_manager_service: ThreadManagerService
-):
-    thread_manager_service.close()
+async def shutdown(app: FastAPI):
+    socket_uc = SocketUC.get_instance()
+    await socket_uc.close()
 
-    logger_service.info("🛑 FastAPI 서버 종료!")
+    logger.info("🛑 FastAPI 서버 종료!")
 
 
 @Whisper.object

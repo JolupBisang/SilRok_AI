@@ -1,7 +1,10 @@
 # services/redis/__init__.py
 
-from .RedisService import RedisService
+from .redis_service import RedisService
+from .dto import IContext as IRedisContext
 
-from . import dto
 
-__all__ = ["RedisService", "dto"]
+__all__ = [
+    "RedisService",
+    "IRedisContext",
+]

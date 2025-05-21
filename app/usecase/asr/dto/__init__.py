@@ -1,7 +1,7 @@
 # usecase/asr/dto/__init__.py
 
-from .TokenRedisContext import TokenRedisContext
+from .redis_context import RedisContext
 
 __all__ = [
-    "TokenRedisContext",
+    "RedisContext",
 ]

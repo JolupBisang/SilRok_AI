@@ -3,15 +3,14 @@ from pyannote.audio import Inference
 import torch
 import numpy as np
 
-from ServerObject import ServerObject
-from core import settings
+from core import Settings, Singleton
 
 
-class Pyannote(ServerObject):
+class Pyannote(Singleton):
     def __init__(
         self,
-        SAMPLE_RATE: int = settings.MODEL_SAMPLE_RATE,
-        hf_token: str = settings.HF_TOKEN,
+        SAMPLE_RATE: int = Settings.MODEL_SAMPLE_RATE,
+        hf_token: str = Settings.HF_TOKEN,
     ):
         super().__init__()
 

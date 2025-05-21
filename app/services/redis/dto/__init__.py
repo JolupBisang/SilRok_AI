@@ -1,7 +1,7 @@
 # services/redis/dto/__init__.py
 
-from .IRedisContext import IRedisContext
+from .i_context import IContext
 
 __all__ = [
-    "IRedisContext",
+    "IContext"
 ]

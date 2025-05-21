@@ -1,13 +1,12 @@
 import google.generativeai as genai
 
-from ServerObject import ServerObject
-from core import settings
+from core import Settings, Singleton
 
 
-class Gemini(ServerObject):
+class Gemini(Singleton):
     def __init__(
         self,
-        GOOGLE_API_KEY: str = settings.GOOGLE_API_KEY,
+        GOOGLE_API_KEY: str = Settings.GOOGLE_API_KEY,
     ):
         super().__init__()
 

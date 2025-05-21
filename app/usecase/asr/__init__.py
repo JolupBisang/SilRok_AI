@@ -1,6 +1,5 @@
 # usecase/asr/__init__.py
 
-from .ASRUC import ASRUC
-from . import dto
+from .asr_uc import ASRUC
 
-__all__ = ["ASRUC", "dto"]
+__all__ = ["asr_uc"]

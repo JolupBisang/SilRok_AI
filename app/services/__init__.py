@@ -3,18 +3,14 @@
 # folders
 from . import asr
 from . import diarization
-from . import LLM
+from . import llm
 from . import redis
-
-# files
-from .LoggerService import LoggerService
-from .ThreadManagerService import ThreadManagerService
+from . import rt_diarization
 
 __all__ = [
     "asr",
     "diarization",
-    "LLM",
+    "llm",
     "redis",
-    "LoggerService",
-    "ThreadManagerService",
+    "rt_diarization",
 ]
