@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from dto.response.annotations import GroupId, Context, Agenda, Feedback
-from services.llm import LLMOutput
+from services.llm_ import LLMOutput
 
 class LLMResponse(BaseModel):
     group_id: GroupId
