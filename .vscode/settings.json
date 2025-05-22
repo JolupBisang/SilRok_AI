@@ -1,21 +1,52 @@
 {
-  "editor.fontFamily": "IBM Plex Sans KR, IBM Plex Mono",
-  "editor.fontLigatures": true,
-  "editor.fontSize": 18,
-  "editor.letterSpacing": 2,
-  "python.defaultInterpreter": "/usr/bin/python3",
-  "python.defaultInterpreterPath": "/usr/bin/python3",
-  "editor.wordWrap": "on",
-  "editor.wrappingIndent": "indent",
-  "jupyter.notebookFileRoot": "/workspaces/dev",
-  "python.envFile": "${workspaceFolder}/.env",
-  "python.analysis.exclude":[
-    "**/__pycache__",
-    "**/.git"
-  ],
-  "files.watcherExclude": {
-		"**/.git/objects/**": true,
-		"**/.git/subtree-cache/**": true,
-		"**/.hg/store/**": true,
-  }
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "editor.wordWrap": "on",
+    "editor.wrappingIndent": "indent",
+    "jupyter.notebookFileRoot": "/workspaces/dev",
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.analysis.exclude": ["**/__pycache__", "**/.git"],
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/.hg/store/**": true
+    },
+    "cSpell.words": [
+        "afut",
+        "ASRUC",
+        "cpus",
+        "Diarizing",
+        "dotenv",
+        "embbeding",
+        "frombuffer",
+        "genai",
+        "generativeai",
+        "LLMUC",
+        "ndarray",
+        "packb",
+        "pyannote",
+        "tobytes",
+        "unpackb",
+        "usecase"
+    ],
+    // Editor
+    "editor.fontFamily": "IBM Plex Sans KR, IBM Plex Mono",
+    "editor.fontLigatures": true,
+    "editor.fontSize": 18,
+    "editor.letterSpacing": 2,
+    "editor.detectIndentation": false,
+    "editor.trimAutoWhitespace": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.eol": "\n",
+    // Formatter
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[plantuml]": {
+        "editor.defaultFormatter": "jebbs.plantuml"
+    }
 }
