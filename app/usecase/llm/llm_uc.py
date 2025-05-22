@@ -3,8 +3,8 @@ import uuid
 from core import Singleton
 from dto.request import LLMContextRequest, LLMMetadataRequest
 from dto.response import LLMResponse
-from services.llm_ import LLMInput, LLMOutput, LLMService
-from services.llm_.dto.flag import REQUEST, UPDATE, DONE
+from services.llm import LLMInput, LLMOutput, LLMService
+from services.llm.dto.flag import REQUEST, UPDATE, DONE
 
 
 class LLMUC(Singleton):
