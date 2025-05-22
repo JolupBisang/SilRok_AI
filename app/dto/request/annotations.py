@@ -103,7 +103,7 @@ NumPeople = Annotated[
 
 MeetingTopic = Annotated[
     str | None,
-    Field(
+    Query(
         default=None,
         title="meeting_topic",
         description="회의 주제 (1-4096자)",
@@ -126,12 +126,7 @@ AudioFile = Annotated[
     File(
         title="audio",
         description="wav 음성 파일을 opus로 압축한 후 base64로 인코딩한 값",
-        examples={
-            "base64": {
-                "summary": "Base64 OPUS 데이터 예시",
-                "value": "base64(opus(wav))",
-            }
-        },
+        example="base64(opus(wav))",
     ),
 ]
 

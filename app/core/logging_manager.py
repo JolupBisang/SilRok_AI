@@ -1,11 +1,22 @@
 import logging
+from pathlib import Path
 from rich.logging import RichHandler
 
+from core import Settings
 
 def generate(name: str, level: int = logging.DEBUG):
     logger = logging.getLogger(name)
+    if logger.hasHandlers():
+        return logger
+
     logger.setLevel(level)
-    if not logger.handlers:
-        logger.addHandler(RichHandler())
     logger.propagate = False
+
+    logger.addHandler(RichHandler())
+
+    log_path = Path(Settings.LOG_DIR) / f"{name}.log"
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setLevel(level)
+    logger.addHandler(file_handler)
+
     return logger

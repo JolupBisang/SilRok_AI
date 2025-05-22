@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import Queue, get_running_loop
 import logging
+from typing import Any
 from google.generativeai import ChatSession
 import ray
 
@@ -136,6 +137,10 @@ class LLM:
     async def get_result(self):
         return await self.__result.get()
 
+    async def send_sig_to_result_queue(self, sig: Any):
+        await self.__result.put(sig)
+
     async def close(self):
-        await asyncio.gather(*asyncio.all_tasks())
+        await self.__queue.put("END")
+        await self.__task
         ray.actor.exit_actor()

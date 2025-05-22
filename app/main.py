@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from api import diarization, docs, llm, main, socket
 from core.lifecycle import shutdown, startup
 from core import Settings
+from core.logger_config import setup_main_logging
+
+from docs import DESCRIPTION
 
 
 @asynccontextmanager
@@ -17,10 +20,13 @@ async def lifespan(app: FastAPI):
 
 
 def server() -> FastAPI:
+    setup_main_logging()  # 로깅 설정
+
     # FastAPI 앱 생성
     app = FastAPI(
         title=Settings.PROJECT_NAME,  # 프로젝트 이름
         version=Settings.PROJECT_VERSION,
+        description=DESCRIPTION,
         lifespan=lifespan,
     )
 

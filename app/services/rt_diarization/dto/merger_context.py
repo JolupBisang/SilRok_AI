@@ -24,11 +24,13 @@ class MergerContext:
             raise ValueError("group_id mismatch")
         self.uuid = X.uuid
 
-        if not X.completed and not X.candidate:
-            return
-
         self.prev_completed = self.completed
         self.prev_candidate = self.candidate
+
+        if not X.completed and not X.candidate:
+            self.completed = []
+            self.candidate = []
+            return
 
         # Update last completed timestamp for each user
         if X.user_id not in self.sync_timestamp:

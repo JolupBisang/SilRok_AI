@@ -89,7 +89,7 @@ class RTDiarizationService(Singleton):
         for consumer in self.__diarizing_asr:
             await consumer.close.remote()
         await self.broker.send_sig_to_result_queue.remote("END")
+        await self.__task
         await self.merger.close.remote()
         await self.broker.close.remote()
-        await self.__task
         self.__task = None

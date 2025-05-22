@@ -1,19 +1,16 @@
 numpy
 pandas
-opencv-python
 scipy
-scikit-image
-matplotlib
 scikit-learn
-seaborn
 tqdm
 fastapi
 uvicorn[standard]
 python-multipart
 python-dotenv
 msgpack
-beartype
 pydantic
+beartype
+ray
 
 # torch
 torch
@@ -47,3 +44,4 @@ silero-vad
 
 # pyannote
 pyannote.audio
+
