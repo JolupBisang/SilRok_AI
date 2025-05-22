@@ -2,11 +2,11 @@
 
 # folders
 from . import embed
-from . import llm_
+from . import llm
 from . import rt_diarization
 
 __all__ = [
     "embed",
-    "llm_",
+    "llm",
     "rt_diarization",
 ]
