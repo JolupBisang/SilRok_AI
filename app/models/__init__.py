@@ -1,6 +1,6 @@
 # models/__init__.py
 
-from .gemeni_ import Gemini
-from .pyannote_ import Pyannote
+from .gemini import Gemini
+from .pyannote import Pyannote
 
 __all__ = ["Pyannote", "Gemini"]

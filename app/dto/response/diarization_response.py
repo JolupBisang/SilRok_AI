@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from services.rt_diarization import RTDiarizationOutput
 
-from .sentence_ import Sentence
+from .sentence import Sentence
 
 class DiarizationResponse(BaseModel):
     completed: list[Sentence]

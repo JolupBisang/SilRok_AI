@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 from RTWhisper.data import Sentence as WhisperSentence
 from services.rt_diarization import Speak
-from .word_ import Word
+from .word import Word
 
 
 class Sentence(BaseModel):
