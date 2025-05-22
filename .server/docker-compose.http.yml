@@ -1,36 +1,28 @@
 name: SilRokAIServerHttp
 services:
-  app:
-    build:
-      context: ..
-      dockerfile: .server/Dockerfile
-    volumes:
-      - ../.model/huggingface:/root/.cache/huggingface
-      - ../.model/torch:/root/.cache/torch
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    depends_on:
-      - redis_str
-      - redis_byte
-  
-  redis_str:
-    image: redis:latest
+    app:
+        build:
+            context: ..
+            dockerfile: .server/Dockerfile
+        shm_size: "36gb"
+        volumes:
+            - ../.model/huggingface:/root/.cache/huggingface
+            - ../.model/torch:/root/.cache/torch
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
 
-  redis_byte:
-    image: redis:latest
-
-  nginx:
-    image: nginx:latest
-    ports:
-      - "8080:443"
-    volumes:
-      - ../nginx/conf.d/http.conf:/etc/nginx/conf.d/http.conf
-      - ../nginx/certbot/conf:/etc/letsencrypt
-      - ../nginx/certbot/www:/var/www/certbot
-    depends_on:
-      - app
+    nginx:
+        image: nginx:latest
+        ports:
+            - "8080:443"
+        volumes:
+            - ../nginx/conf.d/http.conf:/etc/nginx/conf.d/http.conf
+            - ../nginx/certbot/conf:/etc/letsencrypt
+            - ../nginx/certbot/www:/var/www/certbot
+        depends_on:
+            - app

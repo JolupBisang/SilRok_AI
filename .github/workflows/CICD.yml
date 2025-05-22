@@ -1,85 +1,85 @@
 name: CICD
 
 on:
-  push:
-    branches: [ "Develop" ]
-  pull_request:
-    branches: [ "Develop" ]
+    push:
+        branches: ["Develop"]
+    pull_request:
+        branches: ["Develop"]
 
 jobs:
-  CI:
-    runs-on: selabserver
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          clean: false
-          submodules: recursive
-          fetch-depth: 0
+    CI:
+        runs-on: selabserver
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  clean: false
+                  submodules: recursive
+                  fetch-depth: 0
 
-      - name: Stop existing container (if running)
-        run: |
-          if [ "$(docker ps -q -f name=SilRokAIServer)" ]; then
-            docker compose -f .server/docker-compose.yml down
-          fi
+            - name: Stop existing container (if running)
+              run: |
+                  if [ "$(docker ps -q -f name=SilRokAIServer)" ]; then
+                    docker compose -f .server/docker-compose.yml down
+                  fi
 
-      - name: CI
-        run: |
-          docker compose -f .server/docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from dev
-        continue-on-error: true
+            - name: CI
+              run: |
+                  docker compose -f .server/docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from dev
+              continue-on-error: true
 
-      - name: Remove CI files
-        if: always()
-        run: |
-          docker compose -f .server/docker-compose.test.yml down --rmi all --volumes --remove-orphans || true
+            - name: Remove CI files
+              if: always()
+              run: |
+                  docker compose -f .server/docker-compose.test.yml down --rmi all --volumes --remove-orphans || true
 
-      - name: Restore old container
-        if: always()
-        run: |
-          if [ "$(docker ps -q -a -f name=SilRokAIServer)" ]; then
-            docker compose -f .server/docker-compose.yml up -d
-          fi
+            - name: Restore old container
+              if: always()
+              run: |
+                  if [ "$(docker ps -q -a -f name=SilRokAIServer)" ]; then
+                    docker compose -f .server/docker-compose.yml up -d
+                  fi
 
-  CD:
-    if: github.event_name != 'pull_request'
-    runs-on: selabserver
-    needs: CI
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          clean: false
-          submodules: recursive
-          fetch-depth: 0
+    CD:
+        if: github.event_name != 'pull_request'
+        runs-on: selabserver
+        needs: CI
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  clean: false
+                  submodules: recursive
+                  fetch-depth: 0
 
-      - name: Docker
-        run: |
-          docker compose -f .server/docker-compose.yml down
-          docker compose -f .server/docker-compose.yml build
-          docker compose -f .server/docker-compose.yml up -d
-    
-      - name: Send Success Mail
-        if: success()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com    
-          server_port: 587
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }} 
-          from: ${{ secrets.MAIL_USERNAME }}
-          to: sangjung245@gmail.com
-          subject: "[CICD] Deploy Succeeded"
-          body: "Docker Compose deployment completed successfully."
+            - name: Docker
+              run: |
+                  docker compose -f .server/docker-compose.yml down
+                  docker compose -f .server/docker-compose.yml build
+                  docker compose -f .server/docker-compose.yml up -d
 
-      - name: Send Failure Mail
-        if: failure()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          from: ${{ secrets.MAIL_USERNAME }}
-          to: sangjung245@gmail.com
-          subject: "[CICD] Deploy Failed"
-          body: "Deployment failed. Check the logs."
+            - name: Send Success Mail
+              if: success()
+              uses: dawidd6/action-send-mail@v3
+              with:
+                  server_address: smtp.gmail.com
+                  server_port: 587
+                  username: ${{ secrets.MAIL_USERNAME }}
+                  password: ${{ secrets.MAIL_PASSWORD }}
+                  from: ${{ secrets.MAIL_USERNAME }}
+                  to: sangjung245@gmail.com
+                  subject: "[CICD] Deploy Succeeded"
+                  body: "Docker Compose deployment completed successfully."
+
+            - name: Send Failure Mail
+              if: failure()
+              uses: dawidd6/action-send-mail@v3
+              with:
+                  server_address: smtp.gmail.com
+                  server_port: 587
+                  username: ${{ secrets.MAIL_USERNAME }}
+                  password: ${{ secrets.MAIL_PASSWORD }}
+                  from: ${{ secrets.MAIL_USERNAME }}
+                  to: sangjung245@gmail.com
+                  subject: "[CICD] Deploy Failed"
+                  body: "Deployment failed. Check the logs."

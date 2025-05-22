@@ -1,24 +1,16 @@
 name: SilRokAI
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    ports:
-      - "8080:8000"
-    depends_on:
-      - redis_str
-      - redis_byte
-  
-  redis_str:
-    image: redis:latest
-
-  redis_byte:
-    image: redis:latest
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        shm_size: "36gb"
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
+        ports:
+            - "8080:8000"
