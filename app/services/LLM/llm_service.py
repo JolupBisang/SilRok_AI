@@ -67,8 +67,9 @@ class LLMService(Singleton):
         await self.llm.register.remote(X)
 
     async def close(self):
-        if self.__task is not None:
-            await self.llm.send_sig_to_result_queue.remote("END")
-            await self.llm.close.remote()
-            await self.__task
-            self.__task = None
+        if self.__task is None:
+            raise RuntimeError("Service is not running")
+        await self.llm.send_sig_to_result_queue.remote("END")
+        await self.__task
+        await self.llm.close.remote()
+        self.__task = None

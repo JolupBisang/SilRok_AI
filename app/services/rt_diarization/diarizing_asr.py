@@ -108,6 +108,7 @@ class DiarizingASR:
     async def close(self):
         if self.__task is not None:
             self.broker.send_sig_to_diarizing_asr_queue.remote(self.__PID, "END")
+            self.broker.send_sig_to_diarizing_asr_queue.remote(self.__PID, "END")
             await asyncio.gather(*self.__task)
             self.__task = None
             ray.actor.exit_actor()

@@ -30,3 +30,5 @@ class Settings:
 
     MAX_CACHE_SIZE = 3_000
 
+    # LOG
+    LOG_DIR = os.getenv("LOG_DIR", "logs")
