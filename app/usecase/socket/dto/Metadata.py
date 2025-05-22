@@ -1,6 +1,4 @@
 from dataclasses import dataclass, field
-import json
-from datetime import datetime
 from typing import Union
 
 import numpy as np
@@ -18,20 +16,14 @@ class Metadata:
     flag: str
     user_id: int
     group_id: int
-    chunk_id: int
-    timestamp: datetime
     audio: Union[np.ndarray, None] = field(default=None)
     refer: Union[dict, None] = field(default=None)
     metadata: Union[dict, None] = field(default=None)
 
     @staticmethod
-    def __get_json(data: bytes):
-        length = int.from_bytes(data[0:4], byteorder="big")
-        end = 4 + length
-        json_text = data[4:end].decode("utf-8")
-        dic = json.loads(json_text)
-        left = data[end:]
-        return dic, left
+    def __get_dict(data: bytes, loads: callable):
+        end = 4 + int.from_bytes(data[0:4], byteorder="big")
+        return loads(data[4:end]), data[end:]
 
     @staticmethod
     def __get_audio(data: bytes):
@@ -43,8 +35,8 @@ class Metadata:
         return audio
 
     @staticmethod
-    def __get_refer(data: bytes):
-        refer_dict, left = Metadata.__get_json(data)
+    def __get_refer(data: bytes, loads: callable):
+        refer_dict, left = Metadata.__get_dict(data, loads)
 
         start = 0
         new_refer_dict = {}
@@ -61,9 +53,8 @@ class Metadata:
         return new_refer_dict
 
     @staticmethod
-    def __get_metadata(data: bytes):
-        metadata, _ = Metadata.__get_json(data)
-        return metadata
+    def __get_metadata(data: bytes, loads: callable):
+        return Metadata.__get_dict(data, loads)[0]
 
     @staticmethod
     def from_dict(data: dict):
@@ -73,22 +64,20 @@ class Metadata:
 
         return Metadata(
             flag=flag,
-            user_id=data.get("userId", None),
-            group_id=data.get("groupId", None),
-            chunk_id=data.get("chunkId", None),
-            timestamp=data.get("timestamp", None),
+            user_id=data.get("user_id", None),
+            group_id=data.get("group_id", None),
         )
 
     @staticmethod
-    def from_byte(data: bytes):
-        dic, left = Metadata.__get_json(data)
+    def from_byte(data: bytes, loads: callable):
+        dic, left = Metadata.__get_dict(data, loads)
         metadata = Metadata.from_dict(dic)
 
-        if metadata.flag == DIARIZATION_ASR:
+        if metadata.flag == DIARIZATION:
             metadata.audio = Metadata.__get_audio(left)
         elif metadata.flag == DIARIZATION_REFER:
-            metadata.refer = Metadata.__get_refer(left)
+            metadata.refer = Metadata.__get_refer(left, loads)
         elif metadata.flag == METADATA:
-            metadata.metadata = Metadata.__get_metadata(left)
+            metadata.metadata = Metadata.__get_metadata(left, loads)
 
         return metadata

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from RTWhisper.data import Sentence as WhisperSentence
-from services.diarization.dto import Speak
+from services.rt_diarization import Speak
 from .word import Word
 
 
@@ -13,7 +13,6 @@ class Sentence(BaseModel):
     user_id: str = Field(default=None)
     audio_id: str = Field(default=None)
 
-    # TODO 여기에 생성하는 것은 옳지 않음
     @staticmethod
     def get_from_sentence(sentence: WhisperSentence):
         return Sentence(

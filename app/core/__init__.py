@@ -5,7 +5,6 @@ import logging
 from .settings import Settings
 from .singleton import Singleton
 from .async_manager import AsyncManager
-from . import redis
 from . import logging_manager
 
 # logger = logging_manager.generate("core", logging.DEBUG)
@@ -15,7 +14,6 @@ __all__ = [
     "Settings",
     "Singleton",
     "AsyncManager",
-    "redis",
     "logger",
     "logging_manager",
 ]

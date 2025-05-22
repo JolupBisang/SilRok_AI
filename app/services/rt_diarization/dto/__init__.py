@@ -7,6 +7,8 @@ from .merger_context import MergerContext
 from .merger_input import MergerInput
 from .merger_output import MergerOutput
 
+from .speak import Speak
+
 __all__ = [
     "DiarizingASRContext",
     "DiarizingASRInput",
@@ -14,4 +16,5 @@ __all__ = [
     "MergerContext",
     "MergerInput",
     "MergerOutput",
+    "Speak",
 ]

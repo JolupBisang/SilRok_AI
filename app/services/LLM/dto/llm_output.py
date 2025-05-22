@@ -2,9 +2,6 @@ import re
 
 from dataclasses import dataclass, field
 
-from .llm_context import LLMContext
-
-
 @dataclass(slots=True)
 class LLMOutput:
     uuid: str
@@ -16,7 +13,7 @@ class LLMOutput:
     @staticmethod
     def extract_tagged_context(response: str):
         context_match = re.search(r"<context>(.*?)</context>", response, re.DOTALL)
-        return context_match.group(1).strip() if context_match else None
+        return context_match.group(1).strip() if context_match else ""
 
     @staticmethod
     def extract_tagged_agenda(response: str):
@@ -37,9 +34,7 @@ class LLMOutput:
         return feedback
 
     @staticmethod
-    def from_context_and_response(llm_context: LLMContext, response: str):
-        uuid = llm_context.uuid
-        group_id = llm_context.group_id
+    def from_context_and_response(uuid:str, group_id:str, response: str):
         context = LLMOutput.extract_tagged_context(response)
         agenda = LLMOutput.extract_tagged_agenda(response)
         feedback = LLMOutput.extract_tagged_feedback(response)

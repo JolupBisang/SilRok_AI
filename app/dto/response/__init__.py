@@ -1,11 +1,11 @@
 # dto/response/__init__.py
 
-from .sentence_response import SentenceResponse
-from .sentence import Sentence
-from .word import Word
+from .diarization_embed_response import DiarizationEmbedResponse
+from .diarization_response import DiarizationResponse
+from .llm_response import LLMResponse
 
 __all__ = [
-    "SentenceResponse",
-    "Sentence",
-    "Word",
+    "DiarizationEmbedResponse",
+    "DiarizationResponse",
+    "LLMResponse",
 ]

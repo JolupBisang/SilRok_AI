@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import Queue, get_running_loop
 import logging
+from google.generativeai import ChatSession
 import ray
 
 from core import Settings
@@ -12,7 +13,12 @@ from .dto.flag import UPDATE
 
 @ray.remote(num_cpus=1)
 class LLM:
-    def __init__(self):
+    def __init__(
+        self,
+        # 만약, Diarization 의 멀티프로세서 개수가 많아지면 문제 생길 수 있음
+        MAX_STORAGE_SIZE: int = Settings.MAX_STORAGE_SIZE,
+        MAX_CACHE_SIZE: int = Settings.MAX_CACHE_SIZE,
+    ):
         self.gemini = None
         self.logger = None
 
@@ -22,13 +28,11 @@ class LLM:
 
         self.__task = None
 
-        self.__MAX_CACHE_SIZE = None
+        self.__MAX_STORAGE_SIZE = MAX_STORAGE_SIZE
+        self.__MAX_CACHE_SIZE = MAX_CACHE_SIZE
 
     def init(
         self,
-        # 만약, Diarization 의 멀티프로세서 개수가 많아지면 문제 생길 수 있음
-        MAX_STORAGE_SIZE: int = Settings.MAX_STORAGE_SIZE,
-        MAX_CACHE_SIZE: int = Settings.MAX_CACHE_SIZE,
     ):
         from models import Gemini
         from core import logging_manager
@@ -36,13 +40,14 @@ class LLM:
         self.gemini = Gemini.get_instance()
         self.logger = logging_manager.generate("llm", logging.INFO)
 
-        self.__storage = LRUDict(MAX_STORAGE_SIZE)
-        self.__queue = Queue(maxsize=MAX_STORAGE_SIZE)
-        self.__result = Queue(maxsize=MAX_STORAGE_SIZE)
+        self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
+        self.__queue = Queue(maxsize=self.__MAX_STORAGE_SIZE)
+        self.__result = Queue(maxsize=self.__MAX_STORAGE_SIZE)
+        self.__semaphore = asyncio.Semaphore(self.__MAX_STORAGE_SIZE)
 
         self.__task = None
 
-        self.__MAX_CACHE_SIZE = MAX_CACHE_SIZE
+        self.__MAX_CACHE_SIZE = self.__MAX_CACHE_SIZE
 
     def run(self):
         if self.__task is not None:
@@ -65,34 +70,62 @@ class LLM:
                 context = self.__get_context(X)
                 context.update(X)
 
-                if context.mode == UPDATE and len(context.conversation) < self.__MAX_CACHE_SIZE:
+                if (
+                    context.mode == UPDATE
+                    and len(context.conversation) < self.__MAX_CACHE_SIZE
+                ):
                     self.logger.debug(f"Updated conversation")
                     continue
 
                 prompt = context.get_prompt()
-                self.logger.debug(f"Prompt: {prompt}")
-                response = await context.model.send_message_async(prompt)
-                self.logger.debug(f"Response: {response.text}")
                 context.conversation = ""
 
-                Y = LLMOutput.from_context_and_response(context, response.text)
-                # Y = LLMOutput.from_context_and_response(context, "")
-                if Y.context or Y.agenda or Y.feedback:
-                    await self.__result.put(Y)
+                await self.__semaphore.acquire()
+                asyncio.create_task(
+                    self.__process_request(
+                        context.model, X.uuid, X.group_id, prompt, X.must_return
+                    )
+                )
 
                 self.logger.debug(f"LLM processed")
         except BaseException as e:
             self.logger.error(f"LLM consumer error: {e}")
         self.logger.info("LLM consumer stopped")
 
+    async def __process_request(
+        self,
+        model: ChatSession,
+        uuid: str,
+        group_id: str,
+        prompt: str,
+        must_return: bool,
+    ):
+        try:
+            response = await model.send_message_async(prompt)
+            self.logger.debug(f"Prompt: {prompt}")
+            self.logger.debug(f"Response: {response.text}")
+
+            Y = LLMOutput.from_context_and_response(uuid, group_id, response.text)
+
+            if must_return or Y.context or Y.agenda or Y.feedback:
+                await self.__result.put(Y)
+        except Exception as e:
+            self.logger.error(f"LLM processing error: {e}")
+            if must_return:
+                await self.__result.put(
+                    LLMOutput(
+                        uuid=uuid,
+                        group_id=group_id,
+                    )
+                )
+        self.__semaphore.release()
+
     def __get_context(self, X: LLMInput):
         group_id = X.group_id
         if group_id in self.__storage:
             return self.__storage[group_id]
         context = LLMContext(
-            uuid=X.uuid,
-            group_id=X.group_id,
-            model=self.gemini.generate()
+            uuid=X.uuid, group_id=X.group_id, model=self.gemini.generate()
         )
         self.__storage[group_id] = context
         return context

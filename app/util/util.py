@@ -12,7 +12,7 @@ def camel_to_snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-def compress_to_opus(bytes: bytes) -> bytes:
+def compress_to_opus(bytes: bytes):
     process = subprocess.Popen(
         ["ffmpeg", "-i", "pipe:0", "-c:a", "libopus", "-f", "opus", "pipe:1"],
         stdin=subprocess.PIPE,
@@ -24,7 +24,7 @@ def compress_to_opus(bytes: bytes) -> bytes:
     return out, err
 
 
-def decompress_from_opus(bytes: bytes) -> bytes:
+def decompress_from_opus(bytes: bytes):
     process = subprocess.Popen(
         ["ffmpeg", "-i", "pipe:0", "-f", "wav", "pipe:1"],
         stdin=subprocess.PIPE,
@@ -35,8 +35,8 @@ def decompress_from_opus(bytes: bytes) -> bytes:
     return out, err
 
 
-def bytes_to_np(btys: bytes, sample_rate: int) -> np.ndarray:
-    with io.BytesIO(btys) as buffer:
+def bytes_to_np(bt: bytes, sample_rate: int) -> np.ndarray:
+    with io.BytesIO(bt) as buffer:
         audio, sr = sf.read(buffer, dtype="float32")
     if sr != sample_rate:
         audio = resample_poly(audio, sample_rate, sr)

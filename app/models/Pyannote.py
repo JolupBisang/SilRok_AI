@@ -9,12 +9,10 @@ from core import Settings, Singleton
 class Pyannote(Singleton):
     def __init__(
         self,
-        SAMPLE_RATE: int = Settings.MODEL_SAMPLE_RATE,
         hf_token: str = Settings.HF_TOKEN,
     ):
         super().__init__()
 
-        self.__SAMPLE_RATE = SAMPLE_RATE
         self.__embedding_model = Inference(
             model="pyannote/embedding",
             window="whole",
@@ -23,9 +21,9 @@ class Pyannote(Singleton):
         )
         self.__lock = asyncio.Lock()
 
-    async def get_embeddings(self, audio: np.ndarray):
+    async def get_embeddings(self, audio: np.ndarray, sample_rate:int):
         waveform = torch.from_numpy(audio).unsqueeze(0)
         async with self.__lock:
             return self.__embedding_model(
-                {"waveform": waveform, "sample_rate": self.__SAMPLE_RATE}
+                {"waveform": waveform, "sample_rate": sample_rate}
             )

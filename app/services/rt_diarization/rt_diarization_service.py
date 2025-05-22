@@ -66,8 +66,8 @@ class RTDiarizationService(Singleton):
                 try:
                     async with self.__lock:
                         await self.__callbacks[Y.uuid](Y)
-                except KeyError:
-                    logger.warning(f"Callback not found for {Y.uuid}")
+                except Exception as e:
+                    logger.warning(f"Callback not found for {e}")
         except BaseException as e:
             logger.error(f"Error in service: {e}")
         logger.info("Service stopped")

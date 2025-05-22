@@ -13,6 +13,9 @@ class LLMInput:
     num_people:Union[int, None] = field(default=None)
     meeting_topic:Union[str, None] = field(default=None)
 
+    # 임의 필드
+    must_return:bool = field(default=False)
+
     def __post_init__(self):
         if self.mode not in [DONE, REQUEST, UPDATE]:
             raise ValueError(f"Invalid mode: {self.mode}. Must be one of {DONE}, {REQUEST}, {UPDATE}.")

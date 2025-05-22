@@ -46,12 +46,11 @@ class LLMService(Singleton):
                 Y: LLMOutput = await self.llm.get_result.remote()
                 if Y == "END":
                     break
-
                 try:
                     async with self.__lock:
                         await self.__callbacks[Y.uuid](Y)
-                except KeyError:
-                    logger.error(f"Callback not found for {Y.uuid}")
+                except Exception as e:
+                    logger.error(f"Callback not found for {e}")
         except BaseException as e:
             logger.error(f"Error in service: {e}")
         logger.info("Service stopped")

@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 
-from services.rt_diarization.diarization import Speak
-
 from .diarizing_asr_context import DiarizingASRContext
+from .speak import Speak
 
 
 @dataclass(slots=True)
@@ -19,6 +18,6 @@ class DiarizingASROutput:
             uuid=context.uuid,
             group_id=context.group_id,
             user_id=context.user_id,
-            completed=context.diarization_context.completed,
-            candidate=context.diarization_context.candidate,
+            completed=context.diarization_completed,
+            candidate=context.diarization_candidate,
         )

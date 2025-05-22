@@ -1,21 +1,48 @@
 from dataclasses import dataclass, field
 
-from services.rt_diarization.asr import ASRContext
-from services.rt_diarization.diarization import (
-    DiarizationContext,
-    FixedBufferClustering,
-)
+import numpy as np
+
+from RTWhisper.data import Param, Sentence
 
 from .diarizing_asr_input import DiarizingASRInput
-
+from .fixed_buffer_clustering import FixedBufferClustering
+from .speak import Speak
 
 @dataclass(slots=True)
 class DiarizingASRContext:
     uuid: str
     group_id: str
     user_id: str
-    asr_context: ASRContext = field(default=None)
-    diarization_context: DiarizationContext = field(default=None)
+
+    # asr param
+    param: Param = field(default_factory=Param)
+    asr_completed: list[Sentence] = field(default_factory=list)
+    asr_candidate: list[Sentence] = field(default_factory=list)
+
+    # diarization param
+    clustering: FixedBufferClustering = field(
+        default_factory=lambda: FixedBufferClustering({})
+    )
+    audio: np.ndarray = field(default_factory=lambda: np.zeros((0,), dtype=np.float32))
+    offset: int = 0
+
+    diarization_completed: list[Speak] = field(default_factory=list)
+    diarization_candidate: list[Speak] = field(default_factory=list)
+
+    def __asr_update(self, audio: np.ndarray, prompt: str = None, language: str = None):
+        self.param.audio = np.concatenate([self.param.audio, audio])
+        self.param.prompt = prompt
+        self.param.language = language
+        self.asr_completed = []
+        self.asr_candidate = []
+
+    def __diarization_update(self, audio: np.ndarray, refer:dict = {}):
+        self.audio = np.concatenate([self.audio, audio])
+        self.diarization_completed = []
+        self.diarization_candidate = []
+
+        if refer:
+            self.clustering = FixedBufferClustering(refer)
 
     def update(self, X: DiarizingASRInput):
         self.uuid = X.uuid
@@ -24,30 +51,14 @@ class DiarizingASRContext:
         if self.user_id != X.user_id:
             raise ValueError("user_id mismatch")
 
-        self.asr_context.update(X.audio, X.prompt, X.language)
-        self.diarization_context.update_audio(X.audio)
-
-    def update_diarization(self):
-        self.diarization_context.update(
-            self.asr_context.completed, self.asr_context.candidate
-        )
+        self.__asr_update(X.audio, X.prompt, X.language)
+        self.__diarization_update(X.audio, X.refer_dict)
 
     @staticmethod
     def from_diarizing_asr_input(X: DiarizingASRInput):
-        uuid = X.uuid
-        user_id = X.user_id
-        group_id = X.group_id
-        asr_context = ASRContext()
-
-        diarization_context = DiarizationContext(
-            user_id=user_id,
-            clustering=FixedBufferClustering(X.refer_dict),
-        )
-
         return DiarizingASRContext(
-            uuid = uuid,
-            group_id=group_id,
-            user_id=user_id,
-            asr_context=asr_context,
-            diarization_context=diarization_context,
+            uuid = X.uuid,
+            group_id=X.group_id,
+            user_id=X.user_id,
+            clustering=FixedBufferClustering(X.refer_dict),
         )

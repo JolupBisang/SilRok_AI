@@ -2,10 +2,10 @@
 
 from . import socket
 from . import diarization
-from . import asr
+from . import llm
 
 __all__ = [
-    "asr",
-    "diarization",
     "socket",
+    "diarization",
+    "llm",
 ]

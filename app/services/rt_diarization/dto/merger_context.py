@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
-from services.rt_diarization.diarization.dto import Speak
 from .merger_input import MergerInput
+from .speak import Speak
 
 
 @dataclass(slots=True)

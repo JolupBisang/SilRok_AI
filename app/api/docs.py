@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
-@router.get("/asr/ws", tags=["WebSocket Docs"])
+@router.get("/asr/ws")
 async def websocket_docs():
     return JSONResponse({
         "description": "WebSocket Streaming Interface",

@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import WebSocket
 
 from core import logger
-from dto.response import SentenceResponse
+from dto.response import DiarizationResponse
 from services.rt_diarization import (
     RTDiarizationService,
     RTDiarizationInput,
@@ -23,13 +23,11 @@ class DiarizationUC(ASocketUC):
     ):
         super().__init__(*args, **kwargs)
         self.rt_diarization = None
-        self.__callbacks = {}
 
     async def init(self):
         self.rt_diarization = RTDiarizationService.get_instance()
         await asyncio.gather(*self.rt_diarization.init())
         await asyncio.gather(*self.rt_diarization.run())
-        self.__callbacks = {}
 
     # override
     def _storage_init(self, storage: dict, metadata: Metadata):
@@ -48,7 +46,7 @@ class DiarizationUC(ASocketUC):
             storage[group_id]["refer"] = metadata.refer
             logger.debug(f"diarization register refer")
             return True
-        elif metadata.flag == DIARIZATION_ASR:
+        elif metadata.flag == DIARIZATION:
             user_id = metadata.user_id
             refer = {}
             if user_id not in storage[group_id]["users"]:
@@ -59,9 +57,9 @@ class DiarizationUC(ASocketUC):
             return True
         return False
 
-    async def __service(self, sid:Any, metadata: Metadata, refer: dict):
+    async def __service(self, sid: Any, metadata: Metadata, refer: dict):
         X = RTDiarizationInput(
-            uuid = sid,
+            uuid=sid,
             audio=metadata.audio,
             group_id=metadata.group_id,
             user_id=metadata.user_id,
@@ -69,27 +67,26 @@ class DiarizationUC(ASocketUC):
         )
         await self.rt_diarization.request(X)
 
-    def _diarization_sending_process(self, web_socket: WebSocket, sid:Any):
+    def _diarization_sending_process(self, web_socket: WebSocket, sid: Any):
         async def diarization_sending_process(Y: RTDiarizationOutput):
-            Y = SentenceResponse.from_rt_diarization_output(Y)
-            d = Y.model_dump()
-            b = self._dumps(d)
-            await web_socket.send_bytes(b)
+            await web_socket.send_bytes(
+                self._pack_func[sid]["dumps"](
+                    DiarizationResponse.from_rt_diarization_output(Y).model_dump()
+                )
+            )
 
         return diarization_sending_process
 
     # override
-    async def disconnect(self, web_socket: WebSocket, sid:Any):
+    async def disconnect(self, web_socket: WebSocket, sid: Any):
         await super().disconnect(web_socket, sid)
-        if sid in self.__callbacks:
-            callback = self.__callbacks.pop(sid)
-            await self.rt_diarization.remove_callback(sid)
+        await self.rt_diarization.remove_callback(sid)
 
     # override
-    async def _transceive(self, web_socket: WebSocket, sid:Any):
-        callback = self._diarization_sending_process(web_socket, sid)
-        self.__callbacks[sid] = callback
-        await self.rt_diarization.add_callback(sid, callback)
+    async def _transceive(self, web_socket: WebSocket, sid: Any):
+        await self.rt_diarization.add_callback(
+            sid, self._diarization_sending_process(web_socket, sid)
+        )
 
         await super()._transceive(web_socket, sid)
 

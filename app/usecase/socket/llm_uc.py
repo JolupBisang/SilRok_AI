@@ -2,6 +2,7 @@ import asyncio
 from typing import Any
 from fastapi import WebSocket
 from core import logger
+from dto.response.llm_response import LLMResponse
 from services.llm import LLMInput, LLMOutput, LLMService
 from services.rt_diarization import RTDiarizationOutput
 from services.llm.dto.flag import *
@@ -19,14 +20,12 @@ class LLMUC(DiarizationUC):
     ):
         super().__init__(*args, **kwargs)
         self.llm_service = None
-        self.__callbacks = {}
 
     async def init(self):
         await super().init()
         self.llm_service = LLMService.get_instance()
         await asyncio.gather(*self.llm_service.init())
         await asyncio.gather(*self.llm_service.run())
-        self.__callbacks = {}
 
     # override
     async def _run(
@@ -36,15 +35,16 @@ class LLMUC(DiarizationUC):
             return True
 
         if metadata.flag == METADATA:
-            llm_input = LLMInput(
-                uuid=sid,
-                group_id=metadata.group_id,
-                mode=UPDATE,
-                agenda=metadata.metadata["agenda"],
-                num_people=metadata.metadata["num_people"],
-                meeting_topic=metadata.metadata["meeting_topic"],
+            await self.llm_service.request(
+                LLMInput(
+                    uuid=sid,
+                    group_id=metadata.group_id,
+                    mode=UPDATE,
+                    agenda=metadata.metadata.get("agenda", None),
+                    num_people=metadata.metadata.get("num_people", None),
+                    meeting_topic=metadata.metadata.get("meeting_topic", None),
+                )
             )
-            await self.llm_service.request(llm_input)
             logger.debug(f"llm register metadata")
         elif metadata.flag == CONTEXT:
             await self.llm_service.request(
@@ -91,13 +91,8 @@ class LLMUC(DiarizationUC):
         async def llm_sending_process(Y: LLMOutput):
             if Y.uuid == sid:
                 await web_socket.send_bytes(
-                    self._dumps(
-                        {
-                            "group_id": Y.group_id,
-                            "context": Y.context,
-                            "agenda": Y.agenda,
-                            "feedback": Y.feedback,
-                        }
+                    self._pack_func[sid]["dumps"](
+                        LLMResponse.from_llm_output(Y).model_dump()
                     )
                 )
 
@@ -106,15 +101,13 @@ class LLMUC(DiarizationUC):
     # override
     async def disconnect(self, web_socket: WebSocket, sid: Any):
         await super().disconnect(web_socket, sid)
-        if sid in self.__callbacks:
-            callback = self.__callbacks.pop(sid)
-            await self.llm_service.remove_callback(sid)
+        await self.llm_service.remove_callback(sid)
 
     # override
     async def _transceive(self, web_socket: WebSocket, sid: Any):
-        callback = self._llm_sending_process(web_socket, sid)
-        self.__callbacks[sid] = callback
-        await self.llm_service.add_callback(sid, callback)
+        await self.llm_service.add_callback(
+            sid, self._llm_sending_process(web_socket, sid)
+        )
 
         await super()._transceive(web_socket, sid)
 

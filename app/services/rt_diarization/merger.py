@@ -6,29 +6,32 @@ from core import Settings
 from util import LRUDict
 
 from .broker import Broker
-from .diarization.dto import Speak
-from .dto import MergerContext, MergerInput, MergerOutput
+from .dto import MergerContext, MergerInput, MergerOutput, Speak
 
 
 @ray.remote(num_cpus=1)
 class Merger:
-    def __init__(self):
+    def __init__(
+        self,
+        MAX_STORAGE_SIZE: int = Settings.MAX_STORAGE_SIZE,
+    ):
         self.broker = None
         self.logger = None
         self.__task = None
         self.__storage = None
 
+        self.__MAX_STORAGE_SIZE = MAX_STORAGE_SIZE
+
     def init(
         self,
         broker: Broker,
-        MAX_STORAGE_SIZE: int = Settings.MAX_STORAGE_SIZE,
     ):
         from core import logging_manager
 
         self.broker = broker
         self.logger = logging_manager.generate("merger", logging.INFO)
         self.__task = None
-        self.__storage = LRUDict(MAX_STORAGE_SIZE)
+        self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
 
         self.logger.info("Merger initialized")
 
@@ -64,7 +67,8 @@ class Merger:
                 )
 
                 Y = MergerOutput.from_merger_context(context)
-                if Y.completed or Y.candidate:
+                # Must return 은 임의로 한 거임
+                if X.must_return or Y.completed or Y.candidate:
                     await self.broker.complete_merger.remote(
                         MergerOutput.from_merger_context(context)
                     )

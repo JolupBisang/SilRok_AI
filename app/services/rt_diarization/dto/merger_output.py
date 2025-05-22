@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 
-from services.rt_diarization.diarization import Speak
-
 from .merger_context import MergerContext
+from .speak import Speak
 
 
 @dataclass(slots=True)
@@ -17,7 +16,7 @@ class MergerOutput:
         prev_co: list[Speak],
         curr_co: list[Speak],
         prev_ca: list[Speak],
-        curr_ca: list[Speak]
+        curr_ca: list[Speak],
     ) -> int:
         if len(prev_co) != len(curr_co):
             return False
@@ -40,7 +39,7 @@ class MergerOutput:
             context.prev_completed,
             context.completed,
             context.prev_candidate,
-            context.candidate
+            context.candidate,
         ):
             return MergerOutput(
                 uuid=context.uuid,

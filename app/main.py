@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api import asr, main, docs
+from api import diarization, docs, llm, main, socket
 from core.lifecycle import shutdown, startup
 from core import Settings
 
@@ -35,7 +35,9 @@ def server() -> FastAPI:
 
     # 라우터 등록 (API 엔드포인트)
     app.include_router(main.router, prefix="", tags=["Users"])
-    app.include_router(asr.router, prefix="/asr", tags=["AI"])
+    app.include_router(diarization.router, prefix="/diarization", tags=["Diarization"])
+    app.include_router(llm.router, prefix="/llm", tags=["LLM"])
+    app.include_router(socket.router, prefix="/socket", tags=["Socket"])
     app.include_router(docs.router, prefix="/docs", tags=["Docs"])
     return app
 
