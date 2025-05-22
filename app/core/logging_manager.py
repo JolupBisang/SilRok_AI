@@ -15,6 +15,7 @@ def generate(name: str, level: int = logging.DEBUG):
     logger.addHandler(RichHandler())
 
     log_path = Path(Settings.LOG_DIR) / f"{name}.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
     file_handler.setLevel(level)
     logger.addHandler(file_handler)

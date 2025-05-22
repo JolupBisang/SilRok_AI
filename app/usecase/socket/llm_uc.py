@@ -3,9 +3,9 @@ from typing import Any
 from fastapi import WebSocket
 from core import logger
 from dto.response.llm_response import LLMResponse
-from services.llm import LLMInput, LLMOutput, LLMService
+from services.llm_ import LLMInput, LLMOutput, LLMService
 from services.rt_diarization import RTDiarizationOutput
-from services.llm.dto.flag import *
+from services.llm_.dto.flag import *
 
 from .diarization_uc import DiarizationUC
 from .dto import Metadata
