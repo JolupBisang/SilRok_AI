@@ -37,8 +37,9 @@ class LLMContext:
             raise ValueError("Context group_id does not match")
 
         self.uuid = X.uuid
-        self.conversation += "\n" + X.conversation
         self.mode = X.mode
+        if X.conversation is not None:
+            self.conversation += "\n" + X.conversation
         if X.agenda is not None and len(X.agenda) > 0:
             agenda = ""
             for i, a in enumerate(X.agenda):
