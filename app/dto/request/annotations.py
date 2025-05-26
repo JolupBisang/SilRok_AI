@@ -37,6 +37,24 @@ UserId = Annotated[
     ),
 ]
 
+SCOffset = Annotated[
+    int | None,
+    Query(
+        title="sc_offset",
+        description="음성 시작 오프셋 sample rate 단위. 모델은 1초에 16000 샘플을 사용하므로, 1초는 16000, 0.5초는 8000, 0.25초는 4000",
+        examples={
+            "default": {
+                "summary": "기본 오프셋",
+                "value": 0,
+            },
+            "half_second": {
+                "summary": "0.5초 오프셋",
+                "value": 8000,
+            },
+        },
+    ),
+]
+
 SampleRate = Annotated[
     int,
     Query(

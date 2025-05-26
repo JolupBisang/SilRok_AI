@@ -12,10 +12,13 @@ from dto.request import (
 )
 from dto.response import DiarizationEmbedResponse, DiarizationResponse
 from services.embed import EmbedInput, EmbedService
+from services.llm import LLMInput, LLMOutput, LLMService
+from services.llm.dto.flag import UPDATE
 from services.rt_diarization import (
     RTDiarizationInput,
     RTDiarizationOutput,
     RTDiarizationService,
+    Speak,
 )
 from util.util import bytes_to_np, decompress_from_opus
 
@@ -24,20 +27,47 @@ class DiarizationUC(Singleton):
 
     @EmbedService.object
     @RTDiarizationService.object
+    @LLMService.object
     def __init__(
         self,
         embed_service: EmbedService,
         rt_diarization_service: RTDiarizationService,
+        llm_service: LLMService,
         SAMPLE_RATE: int = Settings.MODEL_SAMPLE_RATE,
     ):
         super().__init__()
         self.embed_service = embed_service
         self.rt_diarization_service = rt_diarization_service
+        self.llm_service = llm_service
         self.__SAMPLE_RATE = SAMPLE_RATE
 
+    async def __llm_request(self, group_id: str, conversation: list[Speak]):
+        uid = uuid.uuid4()
+        X = LLMInput(
+            uuid=uid,
+            group_id=group_id,
+            mode=UPDATE,
+            conversation="\n".join(f"{s.user_id}: {s.sentence.text}" for s in conversation),
+            must_return=True,
+        )
+        fut = asyncio.get_running_loop().create_future()
+
+        async def callback(Y: LLMOutput):
+            fut.set_result(Y)
+
+        await self.llm_service.add_callback(uid, callback)
+        await self.llm_service.request(X)
+        await fut
+        await self.llm_service.remove_callback(uid)
+
     async def __diarize(
-        self, group_id: str, user_id: str, audio: np.ndarray, refer: dict = {}
-    ):
+        self,
+        group_id: str,
+        user_id: str,
+        audio: np.ndarray,
+        refer: dict = {},
+        sc_offset: int | None = None,
+    ) -> RTDiarizationOutput:
         uid = uuid.uuid4()
         X = RTDiarizationInput(
             uuid=uid,
@@ -45,6 +75,7 @@ class DiarizationUC(Singleton):
             user_id=user_id,
             audio=audio,
             refer_dict=refer,
+            sc_offset=sc_offset,
             must_return=True,
         )
         fut = asyncio.get_running_loop().create_future()
@@ -56,7 +87,7 @@ class DiarizationUC(Singleton):
         await self.rt_diarization_service.request(X)
         Y = await fut
         await self.rt_diarization_service.remove_callback(uid)
-        return DiarizationResponse.from_rt_diarization_output(Y)
+        return Y
 
     async def __embed(self, audio: np.ndarray, sample_rate: int):
         # ㅋㅋ 극한의 압축
@@ -78,11 +109,20 @@ class DiarizationUC(Singleton):
         return bytes_to_np(wav_bytes, sample_rate)
 
     async def diarize(self, diarization_request: DiarizationRequest):
-        return await self.__diarize(
+        Y = await self.__diarize(
             group_id=diarization_request.group_id,
             user_id=diarization_request.user_id,
             audio=self.__bytes_to_np(diarization_request.audio, self.__SAMPLE_RATE),
+            sc_offset=diarization_request.sc_offset,
         )
+
+        if Y.completed:
+            await self.__llm_request(
+                group_id=diarization_request.group_id,
+                conversation=Y.completed,
+            )
+
+        return DiarizationResponse.from_rt_diarization_output(Y)
 
     async def refer(self, diarization_refer_request: DiarizationReferRequest):
         refer = {}
@@ -95,11 +135,13 @@ class DiarizationUC(Singleton):
                 for v in value
             ]
 
-        return await self.__diarize(
-            group_id=diarization_refer_request.group_id,
-            user_id=diarization_refer_request.user_id,
-            audio=np.zeros((0,), dtype=np.float32),
-            refer=refer,
+        return DiarizationResponse.from_rt_diarization_output(
+            await self.__diarize(
+                group_id=diarization_refer_request.group_id,
+                user_id=diarization_refer_request.user_id,
+                audio=np.zeros((0,), dtype=np.float32),
+                refer=refer,
+            )
         )
 
     async def embed(self, diarization_embed_request: DiarizationEmbedRequest):

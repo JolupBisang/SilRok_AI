@@ -11,7 +11,7 @@ from services.rt_diarization import (
 )
 
 from .a_socket_uc import ASocketUC
-from .dto import Metadata
+from .dto import DiarizeMetadata, Metadata
 from .dto.flag import *
 
 
@@ -40,32 +40,36 @@ class DiarizationUC(ASocketUC):
     async def _run(
         self, web_socket: WebSocket, sid: Any, storage: dict, metadata: Metadata
     ) -> bool:
-        group_id = metadata.group_id
+        flag = metadata.flag
+        if flag not in DIARIZE_FLAGS:
+            return False
 
-        if metadata.flag == DIARIZATION_REFER:
-            storage[group_id]["refer"] = metadata.refer
+        diarize_metadata = DiarizeMetadata.from_metadata(metadata)
+        group_id = diarize_metadata.group_id
+
+        if flag == DIARIZATION_REFER:
+            storage[group_id]["refer"] = diarize_metadata.refer(self._pack_func[sid]["loads"])
             logger.debug(f"diarization register refer")
             return True
-        elif metadata.flag == DIARIZATION:
-            user_id = metadata.user_id
+        elif flag == DIARIZATION:
+            user_id = diarize_metadata.user_id
             refer = {}
             if user_id not in storage[group_id]["users"]:
                 refer = storage[group_id]["refer"]
                 storage[group_id]["users"].add(user_id)
-            await self.__service(sid, metadata, refer)
+            await self.rt_diarization.request(
+                RTDiarizationInput(
+                    uuid=sid,
+                    audio=diarize_metadata.audio,
+                    group_id=diarize_metadata.group_id,
+                    user_id=diarize_metadata.user_id,
+                    refer_dict=refer,
+                    sc_offset= diarize_metadata.sc_offset,
+                )
+            )
             logger.debug(f"diarization service")
             return True
         return False
-
-    async def __service(self, sid: Any, metadata: Metadata, refer: dict):
-        X = RTDiarizationInput(
-            uuid=sid,
-            audio=metadata.audio,
-            group_id=metadata.group_id,
-            user_id=metadata.user_id,
-            refer_dict=refer,
-        )
-        await self.rt_diarization.request(X)
 
     def _diarization_sending_process(self, web_socket: WebSocket, sid: Any):
         async def diarization_sending_process(Y: RTDiarizationOutput):

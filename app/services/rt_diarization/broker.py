@@ -22,7 +22,6 @@ class Broker:
         self.__queue_merger = None
 
         self.__result = None
-        self.__loop = None
 
         self.logger = None
 

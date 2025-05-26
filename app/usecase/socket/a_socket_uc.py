@@ -45,7 +45,6 @@ class ASocketUC(ABC, Singleton):
     async def _transceive(self, web_socket: WebSocket, sid: Any):
         storage = LRUDict(self.__MAX_BUFFER)
         while True:
-            await asyncio.sleep(0)
             byte = await web_socket.receive_bytes()
             logger.debug(f"WebSocket received")
             metadata = Metadata.from_byte(byte, self._pack_func[sid]["loads"])
@@ -56,9 +55,10 @@ class ASocketUC(ABC, Singleton):
             await self._run(web_socket, sid, storage, metadata)
 
     async def disconnect(self, web_socket: WebSocket, sid: Any):
+        self.__remaining_connections += 1
         if web_socket.client_state == WebSocketState.CONNECTED:
             await web_socket.close()
-        self.__remaining_connections += 1
+        del self._pack_func[sid]
         logger.info(f"WebSocket disconnected, remain {self.__remaining_connections}")
 
     async def add(self, web_socket: WebSocket, type_: str = MSGPACK):
@@ -81,15 +81,10 @@ class ASocketUC(ABC, Singleton):
             await self._transceive(web_socket, sid)
 
         except WebSocketDisconnect:
-            del self._pack_func[sid]
-            await self.disconnect(web_socket, sid)
-            return
+            return await self.disconnect(web_socket, sid)
         except BaseException as e:
-            self.__remaining_connections += 1
-            del self._pack_func[sid]
             await self.disconnect(web_socket, sid)
             raise e
-        del self._pack_func[sid]
 
     def __get_dump_func_and_load_func(self, type_: str):
         if type_ == MSGPACK:

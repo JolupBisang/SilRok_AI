@@ -8,6 +8,7 @@ from .diarizing_asr_input import DiarizingASRInput
 from .fixed_buffer_clustering import FixedBufferClustering
 from .speak import Speak
 
+
 @dataclass(slots=True)
 class DiarizingASRContext:
     uuid: str
@@ -36,7 +37,7 @@ class DiarizingASRContext:
         self.asr_completed = []
         self.asr_candidate = []
 
-    def __diarization_update(self, audio: np.ndarray, refer:dict = {}):
+    def __diarization_update(self, audio: np.ndarray, refer: dict = {}):
         self.audio = np.concatenate([self.audio, audio])
         self.diarization_completed = []
         self.diarization_candidate = []
@@ -51,14 +52,33 @@ class DiarizingASRContext:
         if self.user_id != X.user_id:
             raise ValueError("user_id mismatch")
 
+        if X.sc_offset is not None:
+            self.__clear_prev_data()
+            self.param.sc_offset = X.sc_offset
+            self.offset = X.sc_offset
         self.__asr_update(X.audio, X.prompt, X.language)
         self.__diarization_update(X.audio, X.refer_dict)
 
+    def __clear_prev_data(self):
+        self.param = Param()
+        self.asr_completed = []
+        self.asr_candidate = []
+        self.audio = np.zeros((0,), dtype=np.float32)
+        self.offset = 0
+        self.diarization_completed = []
+        self.diarization_candidate = []
+
     @staticmethod
     def from_diarizing_asr_input(X: DiarizingASRInput):
-        return DiarizingASRContext(
-            uuid = X.uuid,
+        context = DiarizingASRContext(
+            uuid=X.uuid,
             group_id=X.group_id,
             user_id=X.user_id,
             clustering=FixedBufferClustering(X.refer_dict),
         )
+
+        if X.sc_offset is not None:
+            context.param.sc_offset = X.sc_offset
+            context.offset = X.sc_offset
+
+        return context
