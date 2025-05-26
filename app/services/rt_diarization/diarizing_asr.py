@@ -74,11 +74,13 @@ class DiarizingASR:
         loop = asyncio.get_running_loop()
         # NOTE 2개가 적당하고, 동적 조절 필요 없다고 생각해서 하드코딩 함
         # TODO 이렇게  하긴 했는데,, 생각해보니 추론 자체가 코루틴이 아님, 일단 두고 추후 수정할 것
+        # TODO CUDA 자체는 커널 호출 자체가 질렬로 동작함. 따라서, RTWhisper 내부에서 CPU 바운드와 GPU 바운드를 분리 하고, GPU 바운드 작업을 다른 RAY actor로 분리하는게 맞음
         self.__task = [
             loop.create_task(self.__run()),
             loop.create_task(self.__run())
         ]
 
+    # TODO 에초에, ray에서 큐잉을 해줌. 즉 내부에서 따로 만든 이러한 큐잉 로직은 필요가 없음. 제거하고, remote 함수 호출식으로 변경할 것
     async def __run(self):
         self.logger.info("Diarizing ASR consumer started")
         try:
@@ -113,13 +115,14 @@ class DiarizingASR:
             self.__task = None
             ray.actor.exit_actor()
 
-    def __get_context(self, X: DiarizingASRInput):
+    def __get_context(self, X: DiarizingASRInput) -> DiarizingASRContext:
         group_id = X.group_id
         user_id = X.user_id
         if group_id not in self.__storage:
             self.__storage[group_id] = {}
         if user_id not in self.__storage[group_id]:
             self.__storage[group_id][user_id] = DiarizingASRContext.from_diarizing_asr_input(X)
+
         return self.__storage[group_id][user_id]
 
     async def __service(self, context: DiarizingASRContext):

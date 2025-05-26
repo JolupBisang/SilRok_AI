@@ -4,6 +4,17 @@ METADATA = "metadata"
 CONTEXT = "context"
 CONTEXT_DONE = "context_done"
 
+LLM_FLAGS = [
+    METADATA,
+    CONTEXT,
+    CONTEXT_DONE,
+]
+
+DIARIZE_FLAGS =[
+    DIARIZATION_REFER,
+    DIARIZATION,
+]
+
 FLAGS = [
     DIARIZATION_REFER,
     DIARIZATION,

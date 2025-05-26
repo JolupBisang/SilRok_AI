@@ -4,8 +4,8 @@ from RTWhisper.data import Token
 
 
 class Word(BaseModel):
-    start: float
-    end: float
+    start: int
+    end: int
     text: str
     lang: str
 

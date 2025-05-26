@@ -64,10 +64,6 @@ class LLM:
                     break
                 self.logger.debug(f"LLM X received")
 
-                if X.mode == UPDATE and not X.conversation:
-                    self.logger.warning("No conversation found")
-                    continue
-
                 context = self.__get_context(X)
                 context.update(X)
 
@@ -76,6 +72,13 @@ class LLM:
                     and len(context.conversation) < self.__MAX_CACHE_SIZE
                 ):
                     self.logger.debug(f"Updated conversation")
+                    if X.must_return:
+                        await self.__result.put(
+                            LLMOutput(
+                                uuid=X.uuid,
+                                group_id=X.group_id,
+                            )
+                        )
                     continue
 
                 prompt = context.get_prompt()

@@ -8,7 +8,7 @@ from services.llm import LLMInput, LLMOutput, LLMService
 from services.llm.dto.flag import *
 
 from .diarization_uc import DiarizationUC
-from .dto import Metadata
+from .dto import LLMMetadata, Metadata
 from .dto.flag import *
 
 
@@ -33,33 +33,38 @@ class LLMUC(DiarizationUC):
     ) -> bool:
         if await super()._run(web_socket, sid, storage, metadata):
             return True
+        flag = metadata.flag
+        if flag not in LLM_FLAGS:
+            return False
 
-        if metadata.flag == METADATA:
+        llm_metadata = LLMMetadata.from_metadata(metadata)
+
+        if flag == METADATA:
             await self.llm_service.request(
                 LLMInput(
                     uuid=sid,
-                    group_id=metadata.group_id,
+                    group_id=llm_metadata.group_id,
                     mode=UPDATE,
-                    agenda=metadata.metadata.get("agenda", None),
-                    num_people=metadata.metadata.get("num_people", None),
-                    meeting_topic=metadata.metadata.get("meeting_topic", None),
+                    agenda=llm_metadata.agenda,
+                    num_people=llm_metadata.num_people,
+                    meeting_topic=llm_metadata.meeting_topic,
                 )
             )
             logger.debug(f"llm register metadata")
-        elif metadata.flag == CONTEXT:
+        elif flag == CONTEXT:
             await self.llm_service.request(
                 LLMInput(
                     uuid=sid,
-                    group_id=metadata.group_id,
+                    group_id=llm_metadata.group_id,
                     mode=REQUEST,
                 )
             )
             logger.debug(f"llm register context")
-        elif metadata.flag == CONTEXT_DONE:
+        elif flag == CONTEXT_DONE:
             await self.llm_service.request(
                 LLMInput(
                     uuid=sid,
-                    group_id=metadata.group_id,
+                    group_id=llm_metadata.group_id,
                     mode=DONE,
                 )
             )
@@ -79,7 +84,7 @@ class LLMUC(DiarizationUC):
                         group_id=Y.group_id,
                         mode=UPDATE,
                         conversation="\n".join(
-                            [f"{s.user_id}: {s.sentence.text}" for s in Y.completed]
+                            f"{s.user_id}: {s.sentence.text}" for s in Y.completed
                         ),
                     )
                 )
