@@ -49,6 +49,7 @@ class DiarizationUC(ASocketUC):
 
         if flag == DIARIZATION_REFER:
             storage[group_id]["refer"] = diarize_metadata.refer(self._pack_func[sid]["loads"])
+            storage[group_id]["users"].clear()
             logger.debug(f"diarization register refer")
             return True
         elif flag == DIARIZATION:
