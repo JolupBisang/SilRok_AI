@@ -42,23 +42,15 @@ class DiarizationUC(Singleton):
         self.__SAMPLE_RATE = SAMPLE_RATE
 
     async def __llm_request(self, group_id: str, conversation: list[Speak]):
-        uid = uuid.uuid4()
-        X = LLMInput(
-            uuid=uid,
-            group_id=group_id,
-            mode=UPDATE,
-            conversation="\n".join(f"{s.user_id}: {s.sentence.text}" for s in conversation),
-            must_return=True,
+        await self.llm_service.request(
+            LLMInput(
+                group_id=group_id,
+                conversation="\n".join(
+                    f"{s.user_id}: {s.sentence.text}" for s in conversation
+                ),
+                mode=UPDATE,
+            )
         )
-        fut = asyncio.get_running_loop().create_future()
-
-        async def callback(Y: LLMOutput):
-            fut.set_result(Y)
-
-        await self.llm_service.add_callback(uid, callback)
-        await self.llm_service.request(X)
-        await fut
-        await self.llm_service.remove_callback(uid)
 
     async def __diarize(
         self,

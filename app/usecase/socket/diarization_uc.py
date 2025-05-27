@@ -22,12 +22,7 @@ class DiarizationUC(ASocketUC):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.rt_diarization = None
-
-    async def init(self):
         self.rt_diarization = RTDiarizationService.get_instance()
-        await asyncio.gather(*self.rt_diarization.init())
-        await asyncio.gather(*self.rt_diarization.run())
 
     # override
     def _storage_init(self, storage: dict, metadata: Metadata):

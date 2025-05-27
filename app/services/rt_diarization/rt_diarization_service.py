@@ -24,7 +24,7 @@ class RTDiarizationService(Singleton):
         self.__task:asyncio.Future = None
         self.__lock:asyncio.Lock = None
 
-    def init(self, NUM_CONSUMERS: int = Settings.NUM_CONSUMERS):
+    async def init(self, NUM_CONSUMERS: int = Settings.NUM_CONSUMERS):
 
         self.broker = Broker.remote()
         self.merger = Merger.remote()
@@ -42,18 +42,18 @@ class RTDiarizationService(Singleton):
         ]
         waiters += [consumer.init.remote(idx, self.broker) for idx, consumer in enumerate(self.__diarizing_asr)]
 
+        await asyncio.gather(*waiters)
+
         logger.info(f"Service initialized with {NUM_CONSUMERS} consumers")
 
-        return waiters
-
-    def run(self):
+    async def run(self):
         if self.__task is not None:
             raise RuntimeError("Service is already running")
         self.__task = asyncio.get_running_loop().create_task(self.__run())
 
         waiters = [self.merger.run.remote(),]
         waiters += [consumer.run.remote() for consumer in self.__diarizing_asr]
-        return waiters
+        await asyncio.gather(*waiters)
 
     async def __run(self):
         logger.info("Service started")

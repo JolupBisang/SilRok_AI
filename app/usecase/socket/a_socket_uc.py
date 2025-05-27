@@ -17,7 +17,7 @@ MSGPACK = "msgpack"
 JSON = "json"
 TYPES = [MSGPACK, JSON]
 
-class ASocketUC(ABC, Singleton):
+class ASocketUC(Singleton):
     def __init__(
         self,
         MAX_CONNECTIONS: int = Settings.SOCKET_UC_MAX_CONNECTIONS,
@@ -29,9 +29,6 @@ class ASocketUC(ABC, Singleton):
         self.__MAX_BUFFER = MAX_BUFFER
 
         self._pack_func = {}
-
-    async def init(self):
-        pass
 
     @abstractmethod
     async def _run(

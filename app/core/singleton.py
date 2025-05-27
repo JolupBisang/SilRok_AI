@@ -1,3 +1,4 @@
+from abc import ABC
 from functools import wraps
 from typing import Any, Callable, Type, TypeVar, cast
 from util.util import camel_to_snake
@@ -5,7 +6,7 @@ from util.util import camel_to_snake
 T = TypeVar("T", bound="Singleton")
 
 
-class Singleton:
+class Singleton(ABC):
     implementation: "Singleton" = None
 
     def __init__(self) -> None:
@@ -24,7 +25,7 @@ class Singleton:
         return cast(T, cls.implementation)
 
     @classmethod
-    def object(cls, func: Any, alias:str = None) -> Callable[..., Any]:
+    def object(cls, func: Any, alias: str = None) -> Callable[..., Any]:
         def decorator(func: Any):
             @wraps(func)
             def wrapper(*args, **kwargs) -> Any:
