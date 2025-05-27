@@ -2,9 +2,11 @@ import re
 
 from dataclasses import dataclass, field
 
+from .llm_context import LLMContext
+
+
 @dataclass(slots=True)
 class LLMOutput:
-    uuid: str
     group_id: str
     context: str = field(default="")
     agenda: list[str] = field(default_factory=list)
@@ -34,13 +36,12 @@ class LLMOutput:
         return feedback
 
     @staticmethod
-    def from_context_and_response(uuid:str, group_id:str, response: str):
+    def from_context_and_response(X: LLMContext, response: str):
         context = LLMOutput.extract_tagged_context(response)
         agenda = LLMOutput.extract_tagged_agenda(response)
         feedback = LLMOutput.extract_tagged_feedback(response)
         return LLMOutput(
-            uuid=uuid,
-            group_id=group_id,
+            group_id=X.group_id,
             context=context,
             agenda=agenda,
             feedback=feedback,

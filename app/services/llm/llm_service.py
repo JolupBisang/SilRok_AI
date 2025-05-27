@@ -1,5 +1,7 @@
+from typing import Callable
 import ray
 import asyncio
+from asyncio import Future
 
 from core import Singleton, logger
 
@@ -8,68 +10,30 @@ from .dto import LLMInput, LLMOutput
 
 
 class LLMService(Singleton):
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         super().__init__()
-        ray.init(
-            ignore_reinit_error=True,
-        )
+        ray.init(ignore_reinit_error=True)
+        self.llm: LLM | None = None
 
-        self.llm: LLM = None
-        self.__callbacks: dict[str:callable] = None
-        self.__task: asyncio.Future = None
-        self.__lock: asyncio.Lock = None
-
-    def init(self):
+    async def init(self) -> None:
         self.llm = LLM.remote()
-        waiters = [self.llm.init.remote()]
+        await self.llm.init.remote()
 
-        self.__callbacks = {}
-        self.__task = None
-        self.__lock = asyncio.Lock()
+    def request_with_callback(
+        self, X: LLMInput, callback: Callable[[LLMOutput], None]
+    ) -> None:
+        async def _run() -> None:
+            try:
+                result = await self.request(X)
+                if result is not None:
+                    await callback(result)
+            except Exception as e:
+                logger.error(f"Error in callback: {e}")
 
-        logger.info("Service initialized")
+        asyncio.create_task(_run())
 
-        return waiters
+    async def request(self, X: LLMInput) -> LLMOutput | None:
+        return await self.llm.request.remote(X)
 
-    def run(self):
-        if self.__task is not None:
-            raise RuntimeError("Service is already running")
-        self.__task = asyncio.get_running_loop().create_task(self.__run())
-        return [self.llm.run.remote()]
-
-    async def __run(self):
-        logger.info("Service started")
-        try:
-            while True:
-                Y: LLMOutput = await self.llm.get_result.remote()
-                if Y == "END":
-                    break
-                try:
-                    async with self.__lock:
-                        await self.__callbacks[Y.uuid](Y)
-                except Exception as e:
-                    logger.error(f"Callback not found for {e}")
-        except BaseException as e:
-            logger.error(f"Error in service: {e}")
-        logger.info("Service stopped")
-
-    async def add_callback(self, sid:str, callback: callable):
-        async with self.__lock:
-            self.__callbacks[sid] = callback
-
-    async def remove_callback(self, sid: str):
-        async with self.__lock:
-            del self.__callbacks[sid]
-
-    async def request(self, X: LLMInput):
-        await self.llm.register.remote(X)
-
-    async def close(self):
-        if self.__task is None:
-            raise RuntimeError("Service is not running")
-        await self.llm.send_sig_to_result_queue.remote("END")
-        await self.__task
+    async def close(self) -> None:
         await self.llm.close.remote()
-        self.__task = None
