@@ -2,13 +2,14 @@ import logging
 import logging.config
 from pathlib import Path
 
-from .settings import Settings
+from config import Config
 
-LOG_DIR_PATH = Path(Settings.LOG_DIR)
+LOG_DIR_PATH = Path(Config.get_instance().config.server.log_dir)
 LOG_DIR_PATH.mkdir(exist_ok=True)
 
 
 def setup_main_logging():
+
     # FIXME 로깅 설정에 문제 있음
     logging.config.dictConfig(
         {

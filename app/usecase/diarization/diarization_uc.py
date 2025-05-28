@@ -4,7 +4,6 @@ import uuid
 
 import numpy as np
 
-from core import Settings, Singleton
 from dto.request import (
     DiarizationEmbedRequest,
     DiarizationReferRequest,
@@ -12,7 +11,7 @@ from dto.request import (
 )
 from dto.response import DiarizationEmbedResponse, DiarizationResponse
 from services.embed import EmbedInput, EmbedService
-from services.llm import LLMInput, LLMOutput, LLMService
+from services.llm import LLMInput, LLMService
 from services.llm.dto.flag import UPDATE
 from services.rt_diarization import (
     RTDiarizationInput,
@@ -23,18 +22,28 @@ from services.rt_diarization import (
 from util.util import bytes_to_np, decompress_from_opus
 
 
-class DiarizationUC(Singleton):
+class DiarizationUC:
 
-    @EmbedService.object
-    @RTDiarizationService.object
-    @LLMService.object
     def __init__(
         self,
         embed_service: EmbedService,
         rt_diarization_service: RTDiarizationService,
         llm_service: LLMService,
-        SAMPLE_RATE: int = Settings.MODEL_SAMPLE_RATE,
+        SAMPLE_RATE: int,
     ):
+        if not isinstance(embed_service, EmbedService):
+            raise TypeError("embed_service must be an instance of EmbedService")
+        if not isinstance(rt_diarization_service, RTDiarizationService):
+            raise TypeError(
+                "rt_diarization_service must be an instance of RTDiarizationService"
+            )
+        if not isinstance(llm_service, LLMService):
+            raise TypeError("llm_service must be an instance of LLMService")
+        if not isinstance(SAMPLE_RATE, int) or SAMPLE_RATE < 8000:
+            raise ValueError(
+                "SAMPLE_RATE must be a positive integer greater than or equal to 8000"
+            )
+
         super().__init__()
         self.embed_service = embed_service
         self.rt_diarization_service = rt_diarization_service

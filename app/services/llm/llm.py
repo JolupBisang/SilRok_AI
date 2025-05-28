@@ -3,7 +3,6 @@ from collections import defaultdict
 import logging
 import ray
 
-from core import Settings
 from util import LRUDict
 
 from .dto import LLMInput, LLMContext, LLMOutput
@@ -15,8 +14,8 @@ class LLM:
     def __init__(
         self,
         # 만약, Diarization 의 멀티프로세서 개수가 많아지면 문제 생길 수 있음
-        MAX_STORAGE_SIZE: int = Settings.MAX_STORAGE_SIZE,
-        MAX_CACHE_SIZE: int = Settings.MAX_CACHE_SIZE,
+        MAX_STORAGE_SIZE: int,
+        MAX_CACHE_SIZE: int,
     ):
         self.gemini = None
         self.logger = None
@@ -27,10 +26,14 @@ class LLM:
         self.__MAX_CACHE_SIZE = MAX_CACHE_SIZE
 
     def init(self):
-        from models import Gemini
+        from container import Container
+        from config import Config
         from core import logging_manager
 
-        self.gemini = Gemini.get_instance()
+        container = Container.get_instance()
+        container.config.update(Config.get_instance().dict)
+
+        self.gemini = container.gemini()
         self.logger = logging_manager.generate("llm", logging.INFO)
 
         self.__locks = defaultdict(asyncio.Lock)

@@ -7,7 +7,6 @@ import traceback
 from RTWhisper import TokenStreamer
 from RTWhisper.data import Result
 from RTWhisper.data import Sentence
-from core import Settings
 from models import Pyannote
 from util import LRUDict
 
@@ -27,9 +26,9 @@ MIN_DURATION = 8000
 class DiarizingASR:
     def __init__(
         self,
-        MAX_STORAGE_SIZE: int = Settings.MAX_STORAGE_SIZE,
-        MIN_AUDIO_DURATION: int = Settings.MIN_AUDIO_DURATION,
-        SAMPLE_RATE: int = Settings.MODEL_SAMPLE_RATE,
+        MAX_STORAGE_SIZE: int,
+        MIN_AUDIO_DURATION: int,
+        SAMPLE_RATE: int,
     ):
         self.__PID = None
         self.broker = None
@@ -49,12 +48,17 @@ class DiarizingASR:
         pid: int,
         broker: Broker,
     ):
+        from container import Container
+        from config import Config
         from core import logging_manager
+
+        container = Container.get_instance()
+        container.config.update(Config.get_instance().dict)
 
         self.__PID = pid
         self.broker = broker
         self.asr = TokenStreamer.get_instance()
-        self.pyannote = Pyannote.get_instance()
+        self.pyannote = container.pyannote()
         self.logger = logging_manager.generate("diarizing_asr", logging.INFO)
         self.__task = None
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
@@ -75,10 +79,7 @@ class DiarizingASR:
         # NOTE 2개가 적당하고, 동적 조절 필요 없다고 생각해서 하드코딩 함
         # TODO 이렇게  하긴 했는데,, 생각해보니 추론 자체가 코루틴이 아님, 일단 두고 추후 수정할 것
         # TODO CUDA 자체는 커널 호출 자체가 질렬로 동작함. 따라서, RTWhisper 내부에서 CPU 바운드와 GPU 바운드를 분리 하고, GPU 바운드 작업을 다른 RAY actor로 분리하는게 맞음
-        self.__task = [
-            loop.create_task(self.__run()),
-            loop.create_task(self.__run())
-        ]
+        self.__task = [loop.create_task(self.__run()), loop.create_task(self.__run())]
 
     # TODO 에초에, ray에서 큐잉을 해줌. 즉 내부에서 따로 만든 이러한 큐잉 로직은 필요가 없음. 제거하고, remote 함수 호출식으로 변경할 것
     async def __run(self):
@@ -121,7 +122,9 @@ class DiarizingASR:
         if group_id not in self.__storage:
             self.__storage[group_id] = {}
         if user_id not in self.__storage[group_id]:
-            self.__storage[group_id][user_id] = DiarizingASRContext.from_diarizing_asr_input(X)
+            self.__storage[group_id][user_id] = (
+                DiarizingASRContext.from_diarizing_asr_input(X)
+            )
 
         return self.__storage[group_id][user_id]
 
@@ -130,7 +133,7 @@ class DiarizingASR:
             # self.logger.info("ASR start")
             self.__asr(context)
             # self.logger.info("ASR done")
-            #FIXME 여기서 refer가 없다면, 오류걸림.
+            # FIXME 여기서 refer가 없다면, 오류걸림.
             await self.__diarize(context)
             # self.logger.info("Diarization done")
         except Exception as e:

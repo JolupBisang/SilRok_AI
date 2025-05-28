@@ -1,0 +1,23 @@
+server:
+    name: SilRok AI Server
+    version: 1.0.0
+    log_level: 20 # INFO: 20, DEBUG: 10
+    log_dir: ${LOG_DIR:./logs}
+
+api:
+    hf_token: ${HF_TOKEN}
+    google_key: ${GOOGLE_API_KEY}
+
+service:
+    sample_rate: 16000
+    llm:
+        max_storage_size: 1000
+        max_cache_size: 3000
+    rt_diarization:
+        num_consumers: 4
+        max_queue_size: 100
+        max_storage_size: 1000
+        min_audio_duration: 48000
+    socket:
+        max_connections: 1
+        max_buffer_size: 20

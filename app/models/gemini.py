@@ -1,13 +1,13 @@
 import google.generativeai as genai
 
-from core import Settings, Singleton
 
+class Gemini:
+    def __init__(self, GOOGLE_API_KEY: str):
+        if not GOOGLE_API_KEY:
+            raise ValueError("Google API key is required for Gemini model")
+        if not isinstance(GOOGLE_API_KEY, str):
+            raise TypeError("Google API key must be a string")
 
-class Gemini(Singleton):
-    def __init__(
-        self,
-        GOOGLE_API_KEY: str = Settings.GOOGLE_API_KEY,
-    ):
         super().__init__()
 
         genai.configure(api_key=GOOGLE_API_KEY)

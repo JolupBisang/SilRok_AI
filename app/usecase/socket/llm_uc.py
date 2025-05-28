@@ -1,6 +1,5 @@
 from typing import Any, Callable
 from fastapi import WebSocket
-from core import logger
 from dto.response.llm_response import LLMResponse
 from services.rt_diarization import RTDiarizationOutput
 from services.llm import LLMInput, LLMOutput, LLMService
@@ -15,10 +14,14 @@ class LLMUC(DiarizationUC):
     def __init__(
         self,
         *args,
+        llm_service: LLMService,
         **kwargs,
     ):
+        if not isinstance(llm_service, LLMService):
+            raise TypeError("llm_service must be an instance of LLMService")
+
         super().__init__(*args, **kwargs)
-        self.llm_service = LLMService.get_instance()
+        self.llm_service = llm_service
         self.__callbacks: dict[str, Callable[[LLMOutput], None]] = {}
 
     def __request_update(
@@ -85,13 +88,13 @@ class LLMUC(DiarizationUC):
 
         if flag == METADATA:
             self.__request_metadata(llm_metadata, self.__callbacks[sid])
-            logger.debug(f"{sid}: llm register metadata")
+            self.logger.debug(f"{sid}: llm register metadata")
         elif flag == CONTEXT:
             self.__request_context(llm_metadata, self.__callbacks[sid])
-            logger.debug(f"{sid}: llm register context")
+            self.logger.debug(f"{sid}: llm register context")
         elif flag == CONTEXT_DONE:
             self.__request_context_done(llm_metadata, self.__callbacks[sid])
-            logger.debug(f"{sid}: llm register context done")
+            self.logger.debug(f"{sid}: llm register context done")
 
         return True
 
@@ -126,8 +129,3 @@ class LLMUC(DiarizationUC):
     async def _transceive(self, web_socket: WebSocket, sid: str):
         self.__callbacks[sid] = self._llm_sending_process(web_socket, sid)
         await super()._transceive(web_socket, sid)
-
-    # override
-    async def close(self):
-        await self.llm_service.close()
-        super().close()

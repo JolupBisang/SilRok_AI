@@ -1,13 +1,13 @@
-import numpy as np
-from core import Singleton
 from models import Pyannote
 
 from .dto import EmbedInput, EmbedOutput
 
 
-class EmbedService(Singleton):
-    @Pyannote.object
+class EmbedService:
     def __init__(self, pyannote: Pyannote):
+        if not isinstance(pyannote, Pyannote):
+            raise TypeError("pyannote must be an instance of Pyannote model")
+
         super().__init__()
         self.pyannote = pyannote
 

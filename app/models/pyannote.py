@@ -3,14 +3,14 @@ from pyannote.audio import Inference
 import torch
 import numpy as np
 
-from core import Settings, Singleton
 
+class Pyannote:
+    def __init__(self, hf_token: str):
+        if not hf_token:
+            raise ValueError("Hugging Face token is required for Pyannote model")
+        if not isinstance(hf_token, str):
+            raise TypeError("Hugging Face token must be a string")
 
-class Pyannote(Singleton):
-    def __init__(
-        self,
-        hf_token: str = Settings.HF_TOKEN,
-    ):
         super().__init__()
 
         self.__embedding_model = Inference(
@@ -21,7 +21,7 @@ class Pyannote(Singleton):
         )
         self.__lock = asyncio.Lock()
 
-    async def get_embeddings(self, audio: np.ndarray, sample_rate:int):
+    async def get_embeddings(self, audio: np.ndarray, sample_rate: int):
         waveform = torch.from_numpy(audio).unsqueeze(0)
         async with self.__lock:
             return self.__embedding_model(

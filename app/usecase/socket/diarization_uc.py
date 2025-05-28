@@ -1,8 +1,6 @@
-import asyncio
 from typing import Any
 from fastapi import WebSocket
 
-from core import logger
 from dto.response import DiarizationResponse
 from services.rt_diarization import (
     RTDiarizationService,
@@ -19,10 +17,16 @@ class DiarizationUC(ASocketUC):
     def __init__(
         self,
         *args,
+        rt_diarization_service: RTDiarizationService,
         **kwargs,
     ):
+        if not isinstance(rt_diarization_service, RTDiarizationService):
+            raise TypeError(
+                "rt_diarization_service must be an instance of RTDiarizationService"
+            )
+
         super().__init__(*args, **kwargs)
-        self.rt_diarization = RTDiarizationService.get_instance()
+        self.rt_diarization_service = rt_diarization_service
 
     # override
     def _storage_init(self, storage: dict, metadata: Metadata):
@@ -43,9 +47,11 @@ class DiarizationUC(ASocketUC):
         group_id = diarize_metadata.group_id
 
         if flag == DIARIZATION_REFER:
-            storage[group_id]["refer"] = diarize_metadata.refer(self._pack_func[sid]["loads"])
+            storage[group_id]["refer"] = diarize_metadata.refer(
+                self._pack_func[sid]["loads"]
+            )
             storage[group_id]["users"].clear()
-            logger.debug(f"diarization register refer")
+            self.logger.debug(f"diarization register refer")
             return True
         elif flag == DIARIZATION:
             user_id = diarize_metadata.user_id
@@ -53,17 +59,17 @@ class DiarizationUC(ASocketUC):
             if user_id not in storage[group_id]["users"]:
                 refer = storage[group_id]["refer"]
                 storage[group_id]["users"].add(user_id)
-            await self.rt_diarization.request(
+            await self.rt_diarization_service.request(
                 RTDiarizationInput(
                     uuid=sid,
                     audio=diarize_metadata.audio,
                     group_id=diarize_metadata.group_id,
                     user_id=diarize_metadata.user_id,
                     refer_dict=refer,
-                    sc_offset= diarize_metadata.sc_offset,
+                    sc_offset=diarize_metadata.sc_offset,
                 )
             )
-            logger.debug(f"diarization service")
+            self.logger.debug(f"diarization service")
             return True
         return False
 
@@ -80,15 +86,12 @@ class DiarizationUC(ASocketUC):
     # override
     async def disconnect(self, web_socket: WebSocket, sid: Any):
         await super().disconnect(web_socket, sid)
-        await self.rt_diarization.remove_callback(sid)
+        await self.rt_diarization_service.remove_callback(sid)
 
     # override
     async def _transceive(self, web_socket: WebSocket, sid: Any):
-        await self.rt_diarization.add_callback(
+        await self.rt_diarization_service.add_callback(
             sid, self._diarization_sending_process(web_socket, sid)
         )
 
         await super()._transceive(web_socket, sid)
-
-    async def close(self):
-        await self.rt_diarization.close()

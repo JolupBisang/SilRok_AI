@@ -1,19 +1,29 @@
+from fastapi import APIRouter, Depends, WebSocket
+from dependency_injector.wiring import inject, Provide
 
-from fastapi import APIRouter, WebSocket
-
+from container import Container
 from usecase.socket import SocketUC
 from usecase.socket import TYPES, MSGPACK
 
 
 router = APIRouter()
 
+
 @router.websocket("/ws")
-async def websocket(websocket: WebSocket):
-    await SocketUC.get_instance().add(websocket)
+@inject
+async def websocket(
+    websocket: WebSocket, socket_uc: SocketUC = Depends(Provide[Container.socket_uc])
+):
+    await socket_uc.add(websocket)
 
 
 @router.websocket("/ws/{type_}")
-async def socket(websocket: WebSocket, type_: str):
+@inject
+async def socket(
+    websocket: WebSocket,
+    type_: str,
+    socket_uc: SocketUC = Depends(Provide[Container.socket_uc]),
+):
     if type_ not in TYPES:
         type_ = MSGPACK
-    await SocketUC.get_instance().add(websocket, type_)
+    await socket_uc.add(websocket, type_)

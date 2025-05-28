@@ -1,13 +1,14 @@
-from core import Singleton
 from dto.request import LLMContextRequest, LLMMetadataRequest
 from dto.response import LLMResponse
 from services.llm import LLMInput, LLMService
 from services.llm.dto.flag import REQUEST, UPDATE, DONE
 
 
-class LLMUC(Singleton):
-    @LLMService.object
+class LLMUC:
     def __init__(self, llm_service: LLMService):
+        if not isinstance(llm_service, LLMService):
+            raise TypeError("llm_service must be an instance of LLMService")
+
         super().__init__()
         self.llm_service = llm_service
 

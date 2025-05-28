@@ -1,23 +1,11 @@
 from fastapi import FastAPI
 
-from core import logger
-from services.llm import LLMService
-from services.rt_diarization import RTDiarizationService
-from usecase.llm import LLMUC
-from usecase.diarization import DiarizationUC
-from usecase.socket import SocketUC
-
 
 async def startup(app: FastAPI):
+    from . import logger
+    from container import Container
 
-    DiarizationUC.get_instance()
-    LLMUC.get_instance()
-    SocketUC.get_instance()
-
-    rt_diarization_service = RTDiarizationService.get_instance()
-    await rt_diarization_service.init()
-    await rt_diarization_service.run()
-    await LLMService.get_instance().init()
+    await Container.init_all()
 
     # logging.getLogger("uvicorn").setLevel(logging.WARNING)
     # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
@@ -27,8 +15,8 @@ async def startup(app: FastAPI):
 
 
 async def shutdown(app: FastAPI):
-    socket_uc = SocketUC.get_instance()
-    await socket_uc.close()
+    from . import logger
+    from container import Container
 
-    logger.info("🛑 FastAPI 서버 종료!")
-
+    await Container.get_instance().shutdown_resources()
+    logger().info("🛑 FastAPI 서버 종료!")

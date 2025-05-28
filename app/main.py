@@ -1,17 +1,18 @@
 from contextlib import asynccontextmanager
+import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from omegaconf import OmegaConf
 
-from api import diarization, docs, llm, main, socket
-from core.lifecycle import shutdown, startup
-from core import Settings
-from core.logger_config import setup_main_logging
-
-from docs import DESCRIPTION
+load_dotenv()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from core.lifecycle import shutdown, startup
+
     # 서버 시작 이벤트
     await startup(app)
     yield
@@ -20,15 +21,25 @@ async def lifespan(app: FastAPI):
 
 
 def server() -> FastAPI:
+    from config import Config
+    from container import Container
+    from core.logger_config import setup_main_logging
+    from api import diarization, docs, llm, main, socket
+    from docs import DESCRIPTION
+
+    container = Container.get_instance()  # 컨테이너 인스턴스 가져오기
+    container.config.update(Config.get_instance().dict)  # 설정 파일 로드
+    container.wire(modules=[diarization, llm, main, socket, docs])  # 의존성 주입 설정
     setup_main_logging()  # 로깅 설정
 
     # FastAPI 앱 생성
     app = FastAPI(
-        title=Settings.PROJECT_NAME,  # 프로젝트 이름
-        version=Settings.PROJECT_VERSION,
+        title=container.config.server.name(),  # 프로젝트 이름
+        version=container.config.server.version(),  # 프로젝트 버전
         description=DESCRIPTION,
         lifespan=lifespan,
     )
+    app.container = container
 
     # CORS 설정 (프론트엔드 연동할 때 필요)
     app.add_middleware(

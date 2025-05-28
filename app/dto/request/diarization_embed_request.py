@@ -1,7 +1,13 @@
 from fastapi import Request
 from pydantic import BaseModel
-from core import Settings
+
+from config import Config
 from dto.request.annotations import AudioFile, SampleRate
+
+
+# 임시 코드
+SAMPLE_RATE = Config.get_instance().config.service.sample_rate
+
 
 class DiarizationEmbedRequest(BaseModel):
     audio: bytes
@@ -10,8 +16,8 @@ class DiarizationEmbedRequest(BaseModel):
     @classmethod
     async def as_file(
         cls,
-        audio:AudioFile,
-        sample_rate: SampleRate = Settings.MODEL_SAMPLE_RATE
+        audio: AudioFile,
+        sample_rate: SampleRate = SAMPLE_RATE,
     ):
         return cls(
             audio=audio,
@@ -21,8 +27,8 @@ class DiarizationEmbedRequest(BaseModel):
     @classmethod
     async def as_stream(
         cls,
-        audio:Request,
-        sample_rate: SampleRate = Settings.MODEL_SAMPLE_RATE
+        audio: Request,
+        sample_rate: SampleRate = SAMPLE_RATE,
     ):
         return cls(
             audio=await audio.body(),
@@ -33,8 +39,8 @@ class DiarizationEmbedRequest(BaseModel):
 class DiarizationEmbedFileRequest:
     def __init__(
         self,
-        audio:AudioFile,
-        sample_rate: SampleRate = Settings.MODEL_SAMPLE_RATE
+        audio: AudioFile,
+        sample_rate: SampleRate = SAMPLE_RATE,
     ):
         self.audio = audio
         self.sample_rate = sample_rate
@@ -49,8 +55,8 @@ class DiarizationEmbedFileRequest:
 class DiarizationEmbedStreamRequest:
     def __init__(
         self,
-        audio:Request,
-        sample_rate: SampleRate = Settings.MODEL_SAMPLE_RATE
+        audio: Request,
+        sample_rate: SampleRate = SAMPLE_RATE,
     ):
         self.audio = audio
         self.sample_rate = sample_rate
@@ -60,7 +66,3 @@ class DiarizationEmbedStreamRequest:
             audio=await self.audio.body(),
             sample_rate=self.sample_rate,
         )
-
-
-
-

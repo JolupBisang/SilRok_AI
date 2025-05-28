@@ -24,6 +24,7 @@
         "ndarray",
         "packb",
         "pyannote",
+        "reinit",
         "tobytes",
         "unpackb",
         "usecase"

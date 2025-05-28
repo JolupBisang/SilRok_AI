@@ -2,7 +2,6 @@ import asyncio
 import logging
 import ray
 
-from core import Settings
 from util import LRUDict
 
 from .broker import Broker
@@ -13,7 +12,7 @@ from .dto import MergerContext, MergerInput, MergerOutput, Speak
 class Merger:
     def __init__(
         self,
-        MAX_STORAGE_SIZE: int = Settings.MAX_STORAGE_SIZE,
+        MAX_STORAGE_SIZE: int,
     ):
         self.broker = None
         self.logger = None
