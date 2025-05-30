@@ -3,7 +3,7 @@ from functools import cached_property
 
 import numpy as np
 
-from config import Config
+from core import Config
 from util.util import bytes_to_np, decompress_from_opus
 
 from .metadata import Metadata

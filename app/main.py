@@ -1,36 +1,24 @@
-from contextlib import asynccontextmanager
-import os
-from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-from omegaconf import OmegaConf
 
-load_dotenv()
+from core.lifecycle import lifespan
+from api import api_router, wire_modules
+from core import Config
+from container import Container
+from core.logging_manager import setup_main_logging
+from docs import DESCRIPTION
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    from core.lifecycle import shutdown, startup
-
-    # 서버 시작 이벤트
-    await startup(app)
-    yield
-    # 서버 종료 이벤트
-    await shutdown(app)
+def get_container():
+    container = Container.get_instance()  # 컨테이너 인스턴스 가져오기
+    container.config.update(Config.get_instance().dict)  # 설정 파일 로드
+    container.wire(modules=wire_modules)  # 의존성 주입 설정
+    return container
 
 
 def server() -> FastAPI:
-    from config import Config
-    from container import Container
-    from core.logger_config import setup_main_logging
-    from api import diarization, docs, llm, main, socket
-    from docs import DESCRIPTION
-
-    container = Container.get_instance()  # 컨테이너 인스턴스 가져오기
-    container.config.update(Config.get_instance().dict)  # 설정 파일 로드
-    container.wire(modules=[diarization, llm, main, socket, docs])  # 의존성 주입 설정
     setup_main_logging()  # 로깅 설정
+    container = get_container()  # 컨테이너 인스턴스 생성
 
     # FastAPI 앱 생성
     app = FastAPI(
@@ -39,7 +27,7 @@ def server() -> FastAPI:
         description=DESCRIPTION,
         lifespan=lifespan,
     )
-    app.container = container
+    # app.container = container
 
     # CORS 설정 (프론트엔드 연동할 때 필요)
     app.add_middleware(
@@ -51,11 +39,8 @@ def server() -> FastAPI:
     )
 
     # 라우터 등록 (API 엔드포인트)
-    app.include_router(main.router, prefix="", tags=["Users"])
-    app.include_router(diarization.router, prefix="/diarization", tags=["Diarization"])
-    app.include_router(llm.router, prefix="/llm", tags=["LLM"])
-    app.include_router(socket.router, prefix="/socket", tags=["Socket"])
-    app.include_router(docs.router, prefix="/docs", tags=["Docs"])
+    app.include_router(api_router, prefix="")
+
     return app
 
 

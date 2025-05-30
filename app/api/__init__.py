@@ -6,4 +6,6 @@ from . import llm
 from . import main
 from . import socket
 
-__all__ = ["diarization", "docs", "llm", "main", "socket"]
+from .api import api_router, wire_modules
+
+__all__ = ["api_router", "wire_modules"]

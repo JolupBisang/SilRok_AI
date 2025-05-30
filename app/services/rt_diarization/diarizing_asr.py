@@ -49,8 +49,7 @@ class DiarizingASR:
         broker: Broker,
     ):
         from container import Container
-        from config import Config
-        from core import logging_manager
+        from core import logging_manager, Config
 
         container = Container.get_instance()
         container.config.update(Config.get_instance().dict)

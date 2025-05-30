@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 
@@ -20,3 +21,11 @@ async def shutdown(app: FastAPI):
 
     await Container.get_instance().shutdown_resources()
     logger().info("🛑 FastAPI 서버 종료!")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버 시작 이벤트
+    await startup(app)
+    yield
+    # 서버 종료 이벤트
+    await shutdown(app)

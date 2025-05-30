@@ -27,7 +27,7 @@ class LLM:
 
     def init(self):
         from container import Container
-        from config import Config
+        from core import Config
         from core import logging_manager
 
         container = Container.get_instance()
