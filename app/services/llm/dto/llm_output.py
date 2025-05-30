@@ -10,7 +10,7 @@ class LLMOutput:
     group_id: str
     context: str = field(default="")
     agenda: list[str] = field(default_factory=list)
-    feedback: dict[str, str] = field(default_factory=dict)
+    feedback: list[dict[str, str]] = field(default_factory=list)
 
     @staticmethod
     def extract_tagged_context(response: str):
@@ -29,9 +29,14 @@ class LLMOutput:
             r"<correction name=\"(.*?)\">(.*?)</correction>", response, re.DOTALL
         )
 
-        feedback = {}
+        feedback = []
         for name, comment in feedback_matches:
-            feedback[name] = comment.strip()
+            feedback.append(
+                {
+                    "name": name.strip(),
+                    "comment": comment.strip(),
+                }
+            )
 
         return feedback
 

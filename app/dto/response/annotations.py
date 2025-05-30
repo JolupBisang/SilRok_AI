@@ -34,15 +34,21 @@ Context = Annotated[
 ]
 
 Feedback = Annotated[
-    dict[str, str],
+    list[dict[str, str]],
     Field(
         title="feedback",
         max_length=1024,
         description="LLM이 생성한 발화자 피드백, 최대 출력 토큰 1024",
-        example={
-            "user_id": "엉뚱한 말을 함",
-            "user_id2": "혼잣말을 자주 함",
-        },
+        example=[
+            {
+                "name": "발화자1",
+                "comment": "발화자1의 피드백 내용",
+            },
+            {
+                "name": "발화자2",
+                "comment": "발화자2의 피드백 내용",
+            },
+        ],
     ),
 ]
 
