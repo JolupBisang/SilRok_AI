@@ -26,14 +26,13 @@ class LLM:
         self.__MAX_CACHE_SIZE = MAX_CACHE_SIZE
 
     def init(self):
-        from container import Container
-        from core import Config
+        from containers import Container
         from core import logging_manager
 
-        container = Container.get_instance()
-        container.config.update(Config.get_instance().dict)
+        manager = Container.get_manager()
+        manager.init_llm()
 
-        self.gemini = container.gemini()
+        self.gemini = manager.container.gemini()
         self.logger = logging_manager.generate("llm", logging.INFO)
 
         self.__locks = defaultdict(asyncio.Lock)

@@ -48,16 +48,16 @@ class DiarizingASR:
         pid: int,
         broker: Broker,
     ):
-        from container import Container
-        from core import logging_manager, Config
+        from containers import Container
+        from core import logging_manager
 
-        container = Container.get_instance()
-        container.config.update(Config.get_instance().dict)
+        manager = Container.get_manager()
+        manager.init_diarization()
 
         self.__PID = pid
         self.broker = broker
         self.asr = TokenStreamer.get_instance()
-        self.pyannote = container.pyannote()
+        self.pyannote = manager.container.pyannote()
         self.logger = logging_manager.generate("diarizing_asr", logging.INFO)
         self.__task = None
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)

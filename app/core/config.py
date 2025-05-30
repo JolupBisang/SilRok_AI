@@ -49,7 +49,6 @@ class Config:
         self.path = path
         self.dict = self.__load_yaml()
         self.config = to_namespace(self.dict)
-        Config.implementation = self
 
     def __load_yaml(self) -> dict:
         with open(self.path, "r", encoding="utf-8") as file:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from dependency_injector.wiring import inject, Provide
 
-from container import Container
+from containers import Container
 from dto.request import (
     DiarizationEmbedRequest,
     DiarizationReferRequest,

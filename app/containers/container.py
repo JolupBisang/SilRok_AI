@@ -1,8 +1,7 @@
-import inspect
-from types import coroutine
-from dependency_injector.containers import DeclarativeContainer
 from dependency_injector import providers
+from dependency_injector.containers import DeclarativeContainer
 
+from core import Config
 from models import Gemini, Pyannote
 from services.embed import EmbedService
 from services.llm import LLMService
@@ -10,12 +9,13 @@ from services.rt_diarization import RTDiarizationService
 from usecase.diarization import DiarizationUC
 from usecase.llm import LLMUC
 from usecase.socket import SocketUC
-
 from core import logger
+
+from .container_manager import ContainerManager
 
 
 class Container(DeclarativeContainer):
-    implementation: "Container" = None
+    manager: ContainerManager = None
     config = providers.Configuration()
     logger = logger
 
@@ -78,37 +78,15 @@ class Container(DeclarativeContainer):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if Container.implementation is not None:
+        if Container.manager is not None:
             raise Exception(
-                f" container is a singleton class. Use Container.get_instance() instead."
+                f"MainContainer is a singleton class. Use MainContainer.get_manager() instead."
             )
 
     @staticmethod
-    async def init_all():
-        if Container.implementation is None:
-            raise Exception(
-                "Container is not initialized. Use Container.get_instance() first."
-            )
-
-        # TODO 메인 프로세서가 안쓰는 것도 컨테이너가 초기화 한다. 이는 문제가 있음.
-        # 각 프로세서가 초기화 하는 것으로 변경 필요. 즉 Container도 분리
-        for namer, provider in Container.implementation.providers.items():
-            if isinstance(provider, providers.Resource):
-                init = provider.init()
-                if inspect.iscoroutine(init):
-                    await provider.init()
-            provider()
-
-    @staticmethod
-    async def shutdown_resources():
-        if Container.implementation is None:
-            raise Exception(
-                "Container is not initialized. Use Container.get_instance() first."
-            )
-        await Container.implementation.shutdown_resources()
-
-    @staticmethod
-    def get_instance(*args, **kwargs) -> "Container":
-        if Container.implementation is None:
-            Container.implementation = Container(*args, **kwargs)
-        return Container.implementation
+    def get_manager(*args, **kwargs):
+        if Container.manager is None:
+            container = Container(*args, **kwargs)
+            container.config.update(Config.get_instance().dict)
+            Container.manager = ContainerManager(container)
+        return Container.manager

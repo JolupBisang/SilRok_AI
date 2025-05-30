@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, WebSocket
 from dependency_injector.wiring import inject, Provide
 
-from container import Container
+from containers import Container
 from usecase.socket import SocketUC
 from usecase.socket import TYPES, MSGPACK
 
@@ -12,7 +12,8 @@ router = APIRouter()
 @router.websocket("/ws")
 @inject
 async def websocket(
-    websocket: WebSocket, socket_uc: SocketUC = Depends(Provide[Container.socket_uc])
+    websocket: WebSocket,
+    socket_uc: SocketUC = Depends(Provide[Container.socket_uc]),
 ):
     await socket_uc.add(websocket)
 

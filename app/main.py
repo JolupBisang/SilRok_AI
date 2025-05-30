@@ -3,27 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.lifecycle import lifespan
 from api import api_router, wire_modules
-from core import Config
-from container import Container
+from containers import Container
 from core.logging_manager import setup_main_logging
 from docs import DESCRIPTION
 
 
-def get_container():
-    container = Container.get_instance()  # 컨테이너 인스턴스 가져오기
-    container.config.update(Config.get_instance().dict)  # 설정 파일 로드
-    container.wire(modules=wire_modules)  # 의존성 주입 설정
-    return container
-
-
 def server() -> FastAPI:
     setup_main_logging()  # 로깅 설정
-    container = get_container()  # 컨테이너 인스턴스 생성
+    manager = Container.get_manager()  # 컨테이너 인스턴스 가져오기
+    manager.container.wire(modules=wire_modules)  # 의존성 주입 설정
+    config = manager.container.config
 
     # FastAPI 앱 생성
     app = FastAPI(
-        title=container.config.server.name(),  # 프로젝트 이름
-        version=container.config.server.version(),  # 프로젝트 버전
+        title = config.server.name(),  # 프로젝트 이름
+        version=config.server.version(),  # 프로젝트 버전
         description=DESCRIPTION,
         lifespan=lifespan,
     )

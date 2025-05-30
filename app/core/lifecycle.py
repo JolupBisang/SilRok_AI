@@ -4,9 +4,9 @@ from fastapi import FastAPI
 
 async def startup(app: FastAPI):
     from . import logger
-    from container import Container
+    from containers import Container
 
-    await Container.init_all()
+    await Container.get_manager().init_main()
 
     # logging.getLogger("uvicorn").setLevel(logging.WARNING)
     # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
@@ -17,10 +17,11 @@ async def startup(app: FastAPI):
 
 async def shutdown(app: FastAPI):
     from . import logger
-    from container import Container
+    from containers import Container
 
-    await Container.get_instance().shutdown_resources()
+    await Container.get_manager().shutdown_resources()
     logger().info("🛑 FastAPI 서버 종료!")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

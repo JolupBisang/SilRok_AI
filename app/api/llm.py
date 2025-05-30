@@ -2,7 +2,7 @@ from fastapi import Depends, Response
 from fastapi.routing import APIRouter
 from dependency_injector.wiring import inject, Provide
 
-from container import Container
+from containers import Container
 from dto.request import LLMContextDoneRequest, LLMContextRequest, LLMMetadataRequest
 from dto.response import LLMResponse
 from usecase.llm import LLMUC
