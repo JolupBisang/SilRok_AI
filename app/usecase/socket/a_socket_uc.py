@@ -22,46 +22,33 @@ class ASocketUC(ABC):
         self,
         logger: Logger,
         MAX_CONNECTIONS: int,
-        MAX_BUFFER_SIZE: int,
     ):
         if not isinstance(logger, Logger):
             raise TypeError("logger must be an instance of logging.Logger")
         if not isinstance(MAX_CONNECTIONS, int) or MAX_CONNECTIONS <= 0:
             raise ValueError("MAX_CONNECTIONS must be a positive integer")
-        if not isinstance(MAX_BUFFER_SIZE, int) or MAX_BUFFER_SIZE <= 1:
-            raise ValueError(
-                "MAX_BUFFER_SIZE must be a positive integer greater than 1"
-            )
 
         super().__init__()
         self.logger = logger
         self.__remaining_connections = MAX_CONNECTIONS
-        self.__MAX_BUFFER_SIZE = MAX_BUFFER_SIZE
 
         self._pack_func = {}
 
     @abstractmethod
     async def _run(
-        self, web_socket: WebSocket, sid: Any, storage: dict, metadata: Metadata
+        self, web_socket: WebSocket, sid: str, metadata: Metadata
     ):
         pass
 
-    def _storage_init(self, storage: dict, metadata: Metadata):
-        storage[metadata.group_id] = {}
-
-    async def _transceive(self, web_socket: WebSocket, sid: Any):
-        storage = LRUDict(self.__MAX_BUFFER_SIZE)
+    async def _transceive(self, web_socket: WebSocket, sid: str):
         while True:
             byte = await web_socket.receive_bytes()
             self.logger.debug(f"WebSocket received")
             metadata = Metadata.from_byte(byte, self._pack_func[sid]["loads"])
 
-            if metadata.group_id not in storage:
-                self._storage_init(storage, metadata)
+            await self._run(web_socket, sid, metadata)
 
-            await self._run(web_socket, sid, storage, metadata)
-
-    async def disconnect(self, web_socket: WebSocket, sid: Any):
+    async def disconnect(self, web_socket: WebSocket, sid: str):
         self.__remaining_connections += 1
         if web_socket.client_state == WebSocketState.CONNECTED:
             await web_socket.close()

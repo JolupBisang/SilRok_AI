@@ -76,5 +76,5 @@ class LLM:
     async def close(self):
         tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         if tasks:
-            await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks, return_exceptions=True)
         ray.actor.exit_actor()

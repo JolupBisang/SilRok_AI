@@ -95,8 +95,9 @@ class DiarizationUC:
         return DiarizationEmbedResponse(
             embedding=base64.b64encode(
                 (
-                    await self.embed_service.embed(
+                    await self.embed_service.request(
                         EmbedInput(
+                            user_id="",
                             audio=audio,
                             sample_rate=sample_rate,
                         )

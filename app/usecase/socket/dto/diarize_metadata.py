@@ -22,7 +22,7 @@ class DiarizeMetadata:
 
     @property
     def group_id(self):
-        return self.metadata.group_id
+        return self.metadata.header["group_id"]
 
     @property
     def user_id(self):

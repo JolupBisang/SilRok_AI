@@ -1,3 +1,4 @@
+DIARIZATION_EMBED = "diarization_embed"
 DIARIZATION_REFER = "diarization_refer"
 DIARIZATION = "diarization"
 METADATA = "metadata"
@@ -11,11 +12,13 @@ LLM_FLAGS = [
 ]
 
 DIARIZE_FLAGS =[
+    DIARIZATION_EMBED,
     DIARIZATION_REFER,
     DIARIZATION,
 ]
 
 FLAGS = [
+    DIARIZATION_EMBED,
     DIARIZATION_REFER,
     DIARIZATION,
     METADATA,

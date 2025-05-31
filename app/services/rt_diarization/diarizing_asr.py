@@ -7,7 +7,6 @@ import traceback
 from RTWhisper import TokenStreamer
 from RTWhisper.data import Result
 from RTWhisper.data import Sentence
-from models import Pyannote
 from util import LRUDict
 
 from .broker import Broker
@@ -22,7 +21,7 @@ from .dto import (
 MIN_DURATION = 8000
 
 
-@ray.remote(num_cpus=1, num_gpus=0.25, memory=5 * 1024**3)
+@ray.remote(num_cpus=1, num_gpus=0.23, memory=5 * 1024**3)
 class DiarizingASR:
     def __init__(
         self,

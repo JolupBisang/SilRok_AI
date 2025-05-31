@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Callable
 from fastapi import WebSocket
 from dto.response.llm_response import LLMResponse
 from services.rt_diarization import RTDiarizationOutput
@@ -76,9 +76,9 @@ class LLMUC(DiarizationUC):
 
     # override
     async def _run(
-        self, web_socket: WebSocket, sid: Any, storage: dict, metadata: Metadata
+        self, web_socket: WebSocket, sid: str, metadata: Metadata
     ) -> bool:
-        if await super()._run(web_socket, sid, storage, metadata):
+        if await super()._run(web_socket, sid, metadata):
             return True
         flag = metadata.flag
         if flag not in LLM_FLAGS:
@@ -99,7 +99,7 @@ class LLMUC(DiarizationUC):
         return True
 
     # override
-    def _diarization_sending_process(self, web_socket: WebSocket, sid: Any):
+    def _diarization_sending_process(self, web_socket: WebSocket, sid: str):
         dsp = super()._diarization_sending_process(web_socket, sid)
 
         async def llm_register(Y: RTDiarizationOutput):
@@ -109,7 +109,7 @@ class LLMUC(DiarizationUC):
 
         return llm_register
 
-    def _llm_sending_process(self, web_socket: WebSocket, sid: Any):
+    def _llm_sending_process(self, web_socket: WebSocket, sid: str):
         async def llm_sending_process(Y: LLMOutput):
             await web_socket.send_bytes(
                 self._pack_func[sid]["dumps"](

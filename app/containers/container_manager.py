@@ -22,6 +22,9 @@ class ContainerManager(ABC):
     def init_diarization(self):
         self.container.pyannote()
 
+    def init_embed(self):
+        self.container.pyannote()
+
     async def init_all(self):
         for provider in self.container.providers.values():
             if isinstance(provider, providers.Resource):

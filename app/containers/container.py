@@ -1,3 +1,4 @@
+from functools import lru_cache
 from dependency_injector import providers
 from dependency_injector.containers import DeclarativeContainer
 
@@ -31,9 +32,9 @@ class Container(DeclarativeContainer):
     )
 
     # service
-    embed_service = providers.Singleton(
+    embed_service = providers.Resource(
         EmbedService,
-        pyannote=pyannote,
+        logger=logger,
     )
 
     llm_service = providers.Resource(
@@ -72,6 +73,8 @@ class Container(DeclarativeContainer):
         logger=logger,
         llm_service=llm_service,
         rt_diarization_service=rt_diarization_service,
+        embed_service=embed_service,
+        SAMPLE_RATE =config.service.sample_rate,
         MAX_CONNECTIONS=config.service.socket.max_connections,
         MAX_BUFFER_SIZE=config.service.socket.max_buffer_size,
     )
@@ -83,6 +86,7 @@ class Container(DeclarativeContainer):
                 f"MainContainer is a singleton class. Use MainContainer.get_manager() instead."
             )
 
+    @lru_cache(maxsize=1)
     @staticmethod
     def get_manager(*args, **kwargs):
         if Container.manager is None:

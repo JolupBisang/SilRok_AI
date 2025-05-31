@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
 import yaml
@@ -56,6 +57,7 @@ class Config:
         replace(config)
         return config
 
+    @lru_cache(maxsize=1)
     @staticmethod
     def get_instance(*args, **kwargs) -> "Config":
         if Config.implementation is None:
