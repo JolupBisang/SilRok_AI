@@ -17,8 +17,9 @@ GroupId = Annotated[
 UserId = Annotated[
     str,
     Field(
-        pattern=r"^[A-Za-z0-9]{1,255}$",
-        min_length=1,
+        # http 요청의 빈 값을 위해
+        pattern=r"^[A-Za-z0-9]{0,255}$",
+        min_length=0,
         max_length=255,
         title="user_id",
         description="화자 고유 ID (숫자·영문, 1-255자)",

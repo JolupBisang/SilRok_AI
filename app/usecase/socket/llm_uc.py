@@ -1,6 +1,6 @@
 from typing import Callable
 from fastapi import WebSocket
-from dto.response.llm_response import LLMResponse
+from dto.response import LLMContextResponse, LLMResponse
 from services.rt_diarization import RTDiarizationOutput
 from services.llm import LLMInput, LLMOutput, LLMService
 from services.llm.dto.flag import *
@@ -75,9 +75,7 @@ class LLMUC(DiarizationUC):
         )
 
     # override
-    async def _run(
-        self, web_socket: WebSocket, sid: str, metadata: Metadata
-    ) -> bool:
+    async def _run(self, web_socket: WebSocket, sid: str, metadata: Metadata) -> bool:
         if await super()._run(web_socket, sid, metadata):
             return True
         flag = metadata.flag
@@ -87,13 +85,13 @@ class LLMUC(DiarizationUC):
         llm_metadata = LLMMetadata.from_metadata(metadata)
 
         if flag == METADATA:
-            self.__request_metadata(llm_metadata, self.__callbacks[sid])
+            self.__request_metadata(llm_metadata, self.__callbacks[sid]["general"])
             self.logger.debug(f"{sid}: llm register metadata")
         elif flag == CONTEXT:
-            self.__request_context(llm_metadata, self.__callbacks[sid])
+            self.__request_context(llm_metadata, self.__callbacks[sid]["general"])
             self.logger.debug(f"{sid}: llm register context")
         elif flag == CONTEXT_DONE:
-            self.__request_context_done(llm_metadata, self.__callbacks[sid])
+            self.__request_context_done(llm_metadata, self.__callbacks[sid]["context"])
             self.logger.debug(f"{sid}: llm register context done")
 
         return True
@@ -119,6 +117,16 @@ class LLMUC(DiarizationUC):
 
         return llm_sending_process
 
+    def _llm_context_sending_process(self, web_socket: WebSocket, sid: str):
+        async def llm_context_context_sending_process(Y: LLMOutput):
+            await web_socket.send_bytes(
+                self._pack_func[sid]["dumps"](
+                    LLMContextResponse.from_llm_output(Y).model_dump()
+                )
+            )
+
+        return llm_context_context_sending_process
+
     # override
     async def disconnect(self, web_socket: WebSocket, sid: str):
         await super().disconnect(web_socket, sid)
@@ -127,5 +135,8 @@ class LLMUC(DiarizationUC):
 
     # override
     async def _transceive(self, web_socket: WebSocket, sid: str):
-        self.__callbacks[sid] = self._llm_sending_process(web_socket, sid)
+        self.__callbacks[sid] = {
+            "general": self._llm_sending_process(web_socket, sid),
+            "context": self._llm_context_sending_process(web_socket, sid),
+        }
         await super()._transceive(web_socket, sid)

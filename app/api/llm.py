@@ -4,7 +4,7 @@ from dependency_injector.wiring import inject, Provide
 
 from containers import Container
 from dto.request import LLMContextDoneRequest, LLMContextRequest, LLMMetadataRequest
-from dto.response import LLMResponse
+from dto.response import LLMResponse, LLMContextResponse
 from usecase.llm import LLMUC
 
 
@@ -30,7 +30,7 @@ async def context(
     return await llm_uc.context(llm_context_request)
 
 
-@router.get("/context_done", response_model=LLMResponse)
+@router.get("/context_done", response_model=LLMContextResponse)
 @inject
 async def context_done(
     llm_context_request: LLMContextDoneRequest = Depends(),

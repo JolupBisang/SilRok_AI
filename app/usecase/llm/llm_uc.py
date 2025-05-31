@@ -1,5 +1,5 @@
 from dto.request import LLMContextRequest, LLMMetadataRequest
-from dto.response import LLMResponse
+from dto.response import LLMResponse, LLMContextResponse
 from services.llm import LLMInput, LLMService
 from services.llm.dto.flag import REQUEST, UPDATE, DONE
 
@@ -31,7 +31,7 @@ class LLMUC:
         )
 
     async def context_done(self, llm_context_request: LLMContextRequest):
-        return LLMResponse.from_llm_output(
+        return LLMContextResponse.from_llm_output(
             await self.llm_service.request(
                 LLMInput(group_id=llm_context_request.group_id, mode=DONE)
             )
