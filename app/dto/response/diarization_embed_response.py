@@ -9,6 +9,9 @@ class DiarizationEmbedResponse(BaseModel):
     user_id: UserId
     embedding: Embedding
 
+    # NOTE front 요청으로 임의 설정
+    flag: str = "diarized"
+
     @staticmethod
     def from_embed_output(embed_output: EmbedOutput) -> "DiarizationEmbedResponse":
         embedding = base64.b64encode(embed_output.embedding).decode("utf-8")

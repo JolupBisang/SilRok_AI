@@ -9,6 +9,10 @@ class LLMResponse(BaseModel):
     agenda: Agenda
     feedback: Feedback
 
+    # NOTE front 요청으로 임의 설정
+    flag:str = "context"
+    is_recap:bool = True
+
     @staticmethod
     def from_llm_output(Y: LLMOutput):
         return LLMResponse(

@@ -9,6 +9,9 @@ class DiarizationResponse(BaseModel):
     completed: list[Sentence]
     candidate: list[Sentence]
 
+    # NOTE front 요청으로 임의 설정
+    flag:str = "diarized"
+
     @staticmethod
     def from_rt_diarization_output(Y: RTDiarizationOutput):
         return DiarizationResponse(

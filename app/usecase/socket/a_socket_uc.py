@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
 import json
 from logging import Logger
-from typing import Any
 import uuid
 
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 import msgpack
-
-from util import LRUDict
 
 from .dto import Metadata
 
@@ -35,9 +32,7 @@ class ASocketUC(ABC):
         self._pack_func = {}
 
     @abstractmethod
-    async def _run(
-        self, web_socket: WebSocket, sid: str, metadata: Metadata
-    ):
+    async def _run(self, web_socket: WebSocket, sid: str, metadata: Metadata):
         pass
 
     async def _transceive(self, web_socket: WebSocket, sid: str):
