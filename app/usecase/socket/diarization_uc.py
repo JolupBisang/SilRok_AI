@@ -1,14 +1,14 @@
-import asyncio
-from typing import Any
+from typing import Callable
 from fastapi import WebSocket
 
-from core import logger
-from dto.response import DiarizationResponse
+from dto.response import DiarizationResponse, DiarizationEmbedResponse
+from services.embed import EmbedInput, EmbedOutput, EmbedService
 from services.rt_diarization import (
     RTDiarizationService,
     RTDiarizationInput,
     RTDiarizationOutput,
 )
+from util import LRUDict
 
 from .a_socket_uc import ASocketUC
 from .dto import DiarizeMetadata, Metadata
@@ -19,59 +19,91 @@ class DiarizationUC(ASocketUC):
     def __init__(
         self,
         *args,
+        rt_diarization_service: RTDiarizationService,
+        embed_service: EmbedService,
+        SAMPLE_RATE: int,
+        MAX_BUFFER_SIZE: int,
         **kwargs,
     ):
+        if not isinstance(rt_diarization_service, RTDiarizationService):
+            raise TypeError(
+                "rt_diarization_service must be an instance of RTDiarizationService"
+            )
+        if not isinstance(embed_service, EmbedService):
+            raise TypeError("embed_service must be an instance of EmbedService")
+        if not isinstance(MAX_BUFFER_SIZE, int) or MAX_BUFFER_SIZE <= 1:
+            raise ValueError(
+                "MAX_BUFFER_SIZE must be a positive integer greater than 1"
+            )
+
         super().__init__(*args, **kwargs)
-        self.rt_diarization = None
+        self.rt_diarization_service = rt_diarization_service
+        self.embed_service = embed_service
+        self.__callbacks: dict[str, Callable[[EmbedOutput], None]] = {}
+        self.__storage: dict[str, LRUDict] = {}
 
-    async def init(self):
-        self.rt_diarization = RTDiarizationService.get_instance()
-        await asyncio.gather(*self.rt_diarization.init())
-        await asyncio.gather(*self.rt_diarization.run())
+        self.__SAMPLE_RATE = SAMPLE_RATE
+        self.__MAX_BUFFER_SIZE = MAX_BUFFER_SIZE
 
-    # override
-    def _storage_init(self, storage: dict, metadata: Metadata):
-        super()._storage_init(storage, metadata)
-        storage[metadata.group_id]["refer"] = {}
+    def _storage_init(self, sid: str, metadata: DiarizeMetadata):
         # FIXME this storage is not memory safe.
-        storage[metadata.group_id]["users"] = set()
+        self.__storage[sid][metadata.group_id] = {
+            "refer": {},
+            "users": set(),
+        }
 
     # override
-    async def _run(
-        self, web_socket: WebSocket, sid: Any, storage: dict, metadata: Metadata
-    ) -> bool:
+    async def _run(self, web_socket: WebSocket, sid: str, metadata: Metadata) -> bool:
         flag = metadata.flag
         if flag not in DIARIZE_FLAGS:
             return False
 
         diarize_metadata = DiarizeMetadata.from_metadata(metadata)
-        group_id = diarize_metadata.group_id
 
-        if flag == DIARIZATION_REFER:
-            storage[group_id]["refer"] = diarize_metadata.refer(self._pack_func[sid]["loads"])
-            logger.debug(f"diarization register refer")
-            return True
-        elif flag == DIARIZATION:
-            user_id = diarize_metadata.user_id
-            refer = {}
-            if user_id not in storage[group_id]["users"]:
-                refer = storage[group_id]["refer"]
-                storage[group_id]["users"].add(user_id)
-            await self.rt_diarization.request(
-                RTDiarizationInput(
-                    uuid=sid,
-                    audio=diarize_metadata.audio,
-                    group_id=diarize_metadata.group_id,
+        if flag == DIARIZATION_EMBED:
+            self.embed_service.request_with_callback(
+                EmbedInput(
                     user_id=diarize_metadata.user_id,
-                    refer_dict=refer,
-                    sc_offset= diarize_metadata.sc_offset,
-                )
+                    audio=diarize_metadata.audio,
+                    sample_rate=self.__SAMPLE_RATE,
+                ),
+                self.__callbacks[sid],
             )
-            logger.debug(f"diarization service")
             return True
+        else:
+            group_id = diarize_metadata.group_id
+            storage = self.__storage[sid]
+            if group_id not in storage:
+                self._storage_init(sid, diarize_metadata)
+
+            if flag == DIARIZATION_REFER:
+                storage[group_id]["refer"] = diarize_metadata.refer(
+                    self._pack_func[sid]["loads"]
+                )
+                storage[group_id]["users"].clear()
+                self.logger.debug(f"diarization register refer")
+                return True
+            elif flag == DIARIZATION:
+                user_id = diarize_metadata.user_id
+                refer = {}
+                if user_id not in storage[group_id]["users"]:
+                    refer = storage[group_id]["refer"]
+                    storage[group_id]["users"].add(user_id)
+                await self.rt_diarization_service.request(
+                    RTDiarizationInput(
+                        uuid=sid,
+                        audio=diarize_metadata.audio,
+                        group_id=diarize_metadata.group_id,
+                        user_id=diarize_metadata.user_id,
+                        refer_dict=refer,
+                        sc_offset=diarize_metadata.sc_offset,
+                    )
+                )
+                self.logger.debug(f"diarization service")
+                return True
         return False
 
-    def _diarization_sending_process(self, web_socket: WebSocket, sid: Any):
+    def _diarization_sending_process(self, web_socket: WebSocket, sid: str):
         async def diarization_sending_process(Y: RTDiarizationOutput):
             await web_socket.send_bytes(
                 self._pack_func[sid]["dumps"](
@@ -81,18 +113,29 @@ class DiarizationUC(ASocketUC):
 
         return diarization_sending_process
 
-    # override
-    async def disconnect(self, web_socket: WebSocket, sid: Any):
-        await super().disconnect(web_socket, sid)
-        await self.rt_diarization.remove_callback(sid)
+    def _embed_sending_process(self, web_socket: WebSocket, sid: str):
+        async def llm_sending_process(Y: EmbedOutput):
+            await web_socket.send_bytes(
+                self._pack_func[sid]["dumps"](
+                    DiarizationEmbedResponse.from_embed_output(Y).model_dump()
+                )
+            )
+
+        return llm_sending_process
 
     # override
-    async def _transceive(self, web_socket: WebSocket, sid: Any):
-        await self.rt_diarization.add_callback(
+    async def disconnect(self, web_socket: WebSocket, sid: str):
+        await super().disconnect(web_socket, sid)
+        await self.rt_diarization_service.remove_callback(sid)
+        if sid in self.__callbacks:
+            del self.__callbacks[sid]
+        del self.__storage[sid]
+
+    # override
+    async def _transceive(self, web_socket: WebSocket, sid: str):
+        self.__storage[sid] = LRUDict(self.__MAX_BUFFER_SIZE)
+        self.__callbacks[sid] = self._embed_sending_process(web_socket, sid)
+        await self.rt_diarization_service.add_callback(
             sid, self._diarization_sending_process(web_socket, sid)
         )
-
         await super()._transceive(web_socket, sid)
-
-    async def close(self):
-        await self.rt_diarization.close()

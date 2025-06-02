@@ -3,12 +3,12 @@ from functools import cached_property
 
 import numpy as np
 
-from core import Settings
+from core import Config
 from util.util import bytes_to_np, decompress_from_opus
 
 from .metadata import Metadata
 
-SAMPLE_RATE = Settings.MODEL_SAMPLE_RATE
+SAMPLE_RATE = Config.get_instance().config.service.sample_rate
 EMBEDDING_LENGTH = 512 * 4  # 4 bytes for float32
 
 
@@ -22,7 +22,7 @@ class DiarizeMetadata:
 
     @property
     def group_id(self):
-        return self.metadata.group_id
+        return self.metadata.header["group_id"]
 
     @property
     def user_id(self):

@@ -1,19 +1,43 @@
+import asyncio
+from logging import Logger
+from typing import Callable
+from dependency_injector.resources import AsyncResource
 import numpy as np
-from core import Singleton
-from models import Pyannote
+import ray
 
+from .embed import Embed
 from .dto import EmbedInput, EmbedOutput
 
 
-class EmbedService(Singleton):
-    @Pyannote.object
-    def __init__(self, pyannote: Pyannote):
-        super().__init__()
-        self.pyannote = pyannote
+class EmbedService(AsyncResource):
+    async def init(self, logger: Logger):
+        if not isinstance(logger, Logger):
+            raise TypeError("logger must be an instance of logging.Logger")
 
-    async def embed(self, embed_input: EmbedInput):
-        return EmbedOutput(
-            embedding=await self.pyannote.get_embeddings(
-                embed_input.audio, embed_input.sample_rate
-            )
-        )
+        super().__init__()
+        ray.init(ignore_reinit_error=True)
+
+        self.logger = logger
+        self.embed = Embed.remote()
+        await self.embed.init.remote()
+
+        return self
+
+    async def shutdown(self, _: "EmbedService") -> None:
+        await self.embed.close.remote()
+
+    async def request(self, X: EmbedInput) -> np.ndarray:
+        return await self.embed.request.remote(X)
+
+    def request_with_callback(
+        self, X: EmbedInput, callback: Callable[[EmbedOutput], None]
+    ) -> None:
+        async def _run() -> None:
+            try:
+                result = await self.request(X)
+                if result is not None:
+                    await callback(result)
+            except Exception as e:
+                print(f"Error in callback: {e}")
+
+        asyncio.create_task(_run())

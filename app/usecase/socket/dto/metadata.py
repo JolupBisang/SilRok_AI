@@ -1,21 +1,20 @@
 from dataclasses import dataclass
-from functools import cached_property
 
 from .flag import *
 
 EMBEDDING_LENGTH = 512 * 4  # 4 bytes for float32
 
 
-@dataclass
+@dataclass(slots=True)
 class Metadata:
     header: dict
     payload: bytes
 
-    @cached_property
+    @property
     def flag(self):
         return self.header["flag"]
 
-    @cached_property
+    @property
     def group_id(self):
         return self.header["group_id"]
 

@@ -1,18 +1,12 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-
-from core import logger
-from usecase.llm import LLMUC
-from usecase.diarization import DiarizationUC
-from usecase.socket import SocketUC
 
 
 async def startup(app: FastAPI):
+    from . import logger
+    from containers import Container
 
-    DiarizationUC.get_instance()
-    LLMUC.get_instance()
-    socket_uc = SocketUC.get_instance()
-    await socket_uc.init()
-
+    await Container.get_manager().init_main()
 
     # logging.getLogger("uvicorn").setLevel(logging.WARNING)
     # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
@@ -22,8 +16,17 @@ async def startup(app: FastAPI):
 
 
 async def shutdown(app: FastAPI):
-    socket_uc = SocketUC.get_instance()
-    await socket_uc.close()
+    from . import logger
+    from containers import Container
 
-    logger.info("🛑 FastAPI 서버 종료!")
+    await Container.get_manager().shutdown_resources()
+    logger().info("🛑 FastAPI 서버 종료!")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버 시작 이벤트
+    await startup(app)
+    yield
+    # 서버 종료 이벤트
+    await shutdown(app)

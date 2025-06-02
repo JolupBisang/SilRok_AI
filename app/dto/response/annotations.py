@@ -14,6 +14,19 @@ GroupId = Annotated[
     ),
 ]
 
+UserId = Annotated[
+    str,
+    Field(
+        # http 요청의 빈 값을 위해
+        pattern=r"^[A-Za-z0-9]{0,255}$",
+        min_length=0,
+        max_length=255,
+        title="user_id",
+        description="화자 고유 ID (숫자·영문, 1-255자)",
+        example="User123",
+    ),
+]
+
 Agenda = Annotated[
     list[int],
     Field(
@@ -34,15 +47,21 @@ Context = Annotated[
 ]
 
 Feedback = Annotated[
-    dict[str, str],
+    list[dict[str, str]],
     Field(
         title="feedback",
         max_length=1024,
         description="LLM이 생성한 발화자 피드백, 최대 출력 토큰 1024",
-        example={
-            "user_id": "엉뚱한 말을 함",
-            "user_id2": "혼잣말을 자주 함",
-        },
+        example=[
+            {
+                "name": "발화자1",
+                "comment": "발화자1의 피드백 내용",
+            },
+            {
+                "name": "발화자2",
+                "comment": "발화자2의 피드백 내용",
+            },
+        ],
     ),
 ]
 

@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .metadata import Metadata
 
@@ -13,7 +13,7 @@ class LLMMetadata:
 
     @property
     def group_id(self):
-        return self.metadata.group_id
+        return self.metadata.header["group_id"]
 
     @property
     def user_id(self):

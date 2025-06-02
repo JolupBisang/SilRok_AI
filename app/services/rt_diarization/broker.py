@@ -4,17 +4,19 @@ from typing import Any, Union
 import ray
 from asyncio import Queue
 
-from core import Settings
-
 from .dto import (
     DiarizingASRInput,
     MergerInput,
     MergerOutput,
 )
 
+
 @ray.remote(num_cpus=1)
 class Broker:
-    def __init__(self):
+    def __init__(
+        self,
+        MAX_QUEUE_SIZE: int,
+    ):
         self.__group_to_pid = None
         self.__pid_to_group = None
 
@@ -25,10 +27,11 @@ class Broker:
 
         self.logger = None
 
+        self.__MAX_QUEUE_SIZE = MAX_QUEUE_SIZE
+
     def init(
         self,
         consumer_pid_list: list[int],
-        MAX_QUEUE_SIZE=Settings.MAX_QUEUE_SIZE,
     ):
         from core import logging_manager
 
@@ -36,10 +39,10 @@ class Broker:
         self.__pid_to_group = {pid: [] for pid in consumer_pid_list}
 
         self.__queue_diarizing_asr = {
-            pid: Queue(maxsize=MAX_QUEUE_SIZE) for pid in consumer_pid_list
+            pid: Queue(maxsize=self.__MAX_QUEUE_SIZE) for pid in consumer_pid_list
         }
-        self.__queue_merger = Queue(maxsize=MAX_QUEUE_SIZE)
-        self.__result = Queue(maxsize=MAX_QUEUE_SIZE)
+        self.__queue_merger = Queue(maxsize=self.__MAX_QUEUE_SIZE)
+        self.__result = Queue(maxsize=self.__MAX_QUEUE_SIZE)
 
         self.logger = logging_manager.generate("broker", logging.INFO)
 

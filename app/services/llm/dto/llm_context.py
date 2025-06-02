@@ -8,11 +8,10 @@ from .flag import *
 
 @dataclass(slots=True)
 class LLMContext:
-    uuid:str
     group_id: str
     model: ChatSession
 
-    mode:str = field(default=REQUEST)
+    mode: str = field(default=REQUEST)
     agenda: str = field(default="")
     num_people: int = field(default=0)
     meeting_topic: str = field(default="")
@@ -32,11 +31,10 @@ class LLMContext:
     __JUST_SEND: str = field(default=JUST_SEND)
     __FINAL_PROMPT: str = field(default=FINAL_PROMPT)
 
-    def update(self, X:LLMInput):
+    def update(self, X: LLMInput):
         if X.group_id != self.group_id:
             raise ValueError("Context group_id does not match")
 
-        self.uuid = X.uuid
         self.mode = X.mode
         if X.conversation is not None:
             self.conversation += "\n" + X.conversation
@@ -86,4 +84,6 @@ class LLMContext:
         elif self.mode == DONE:
             return self.__done()
         else:
-            raise ValueError(f"Invalid mode: {self.mode}. Must be one of {DONE}, {REQUEST}, {UPDATE}.")
+            raise ValueError(
+                f"Invalid mode: {self.mode}. Must be one of {DONE}, {REQUEST}, {UPDATE}."
+            )

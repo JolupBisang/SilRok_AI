@@ -4,7 +4,6 @@ import uuid
 
 import numpy as np
 
-from core import Settings, Singleton
 from dto.request import (
     DiarizationEmbedRequest,
     DiarizationReferRequest,
@@ -12,7 +11,7 @@ from dto.request import (
 )
 from dto.response import DiarizationEmbedResponse, DiarizationResponse
 from services.embed import EmbedInput, EmbedService
-from services.llm import LLMInput, LLMOutput, LLMService
+from services.llm import LLMInput, LLMService
 from services.llm.dto.flag import UPDATE
 from services.rt_diarization import (
     RTDiarizationInput,
@@ -23,18 +22,28 @@ from services.rt_diarization import (
 from util.util import bytes_to_np, decompress_from_opus
 
 
-class DiarizationUC(Singleton):
+class DiarizationUC:
 
-    @EmbedService.object
-    @RTDiarizationService.object
-    @LLMService.object
     def __init__(
         self,
         embed_service: EmbedService,
         rt_diarization_service: RTDiarizationService,
         llm_service: LLMService,
-        SAMPLE_RATE: int = Settings.MODEL_SAMPLE_RATE,
+        SAMPLE_RATE: int,
     ):
+        if not isinstance(embed_service, EmbedService):
+            raise TypeError("embed_service must be an instance of EmbedService")
+        if not isinstance(rt_diarization_service, RTDiarizationService):
+            raise TypeError(
+                "rt_diarization_service must be an instance of RTDiarizationService"
+            )
+        if not isinstance(llm_service, LLMService):
+            raise TypeError("llm_service must be an instance of LLMService")
+        if not isinstance(SAMPLE_RATE, int) or SAMPLE_RATE < 8000:
+            raise ValueError(
+                "SAMPLE_RATE must be a positive integer greater than or equal to 8000"
+            )
+
         super().__init__()
         self.embed_service = embed_service
         self.rt_diarization_service = rt_diarization_service
@@ -42,23 +51,15 @@ class DiarizationUC(Singleton):
         self.__SAMPLE_RATE = SAMPLE_RATE
 
     async def __llm_request(self, group_id: str, conversation: list[Speak]):
-        uid = uuid.uuid4()
-        X = LLMInput(
-            uuid=uid,
-            group_id=group_id,
-            mode=UPDATE,
-            conversation="\n".join(f"{s.user_id}: {s.sentence.text}" for s in conversation),
-            must_return=True,
+        await self.llm_service.request(
+            LLMInput(
+                group_id=group_id,
+                conversation="\n".join(
+                    f"{s.user_id}: {s.sentence.text}" for s in conversation
+                ),
+                mode=UPDATE,
+            )
         )
-        fut = asyncio.get_running_loop().create_future()
-
-        async def callback(Y: LLMOutput):
-            fut.set_result(Y)
-
-        await self.llm_service.add_callback(uid, callback)
-        await self.llm_service.request(X)
-        await fut
-        await self.llm_service.remove_callback(uid)
 
     async def __diarize(
         self,
@@ -92,10 +93,12 @@ class DiarizationUC(Singleton):
     async def __embed(self, audio: np.ndarray, sample_rate: int):
         # ㅋㅋ 극한의 압축
         return DiarizationEmbedResponse(
+            user_id = "",
             embedding=base64.b64encode(
                 (
-                    await self.embed_service.embed(
+                    await self.embed_service.request(
                         EmbedInput(
+                            user_id="",
                             audio=audio,
                             sample_rate=sample_rate,
                         )

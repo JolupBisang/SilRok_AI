@@ -3,7 +3,11 @@ from typing import Annotated
 from fastapi import File, Query
 from pydantic import Field
 
-from core import Settings
+from core import Config
+
+# 임시 코드
+SAMPLE_RATE = Config.get_instance().config.service.sample_rate
+
 
 # Query
 
@@ -59,11 +63,11 @@ SampleRate = Annotated[
     int,
     Query(
         title="sample_rate",
-        description=f"샘플링 주파수 (Hz), 모델은 {Settings.MODEL_SAMPLE_RATE}kHz를 사용하기 때문에, diarization에 사용할 시, {Settings.MODEL_SAMPLE_RATE}Hz로 변환 필요",
+        description=f"샘플링 주파수 (Hz), 모델은 {SAMPLE_RATE}kHz를 사용하기 때문에, diarization에 사용할 시, {SAMPLE_RATE}Hz로 변환 필요",
         examples={
             "default": {
                 "summary": "기본 샘플레이트",
-                "value": Settings.MODEL_SAMPLE_RATE,
+                "value": SAMPLE_RATE,
             },
             "high": {"summary": "높은 샘플레이트", "value": 48000},
         },
