@@ -17,7 +17,7 @@ class MergerContext:
     cached_completed: dict[str, list[Speak]] = field(default_factory=dict)
     cached_candidate: dict[str, list[Speak]] = field(default_factory=dict)
     sync_timestamp: dict[str, int] = field(default_factory=dict)
-    user_speak_order: dict[str, int] = field(default_factory=dict)
+    speak_order: int = field(default=0)
 
     def update(self, X: MergerInput):
         if self.group_id != X.group_id:
@@ -47,7 +47,9 @@ class MergerContext:
         all_completed = [s for speaks in self.cached_completed.values() for s in speaks]
         all_candidate = [s for speaks in self.cached_candidate.values() for s in speaks]
 
-        new_completed = [c for c in all_completed if c.sentence.tokens[-1].end <= base_time]
+        new_completed = [
+            c for c in all_completed if c.sentence.tokens[-1].end <= base_time
+        ]
         new_candidate = [c for c in all_completed if c not in new_completed]
         new_candidate += all_candidate
 
@@ -60,21 +62,13 @@ class MergerContext:
     def set_result(self, completed: list[Speak], candidate: list[Speak]):
 
         for speak in completed:
-            user_id = speak.user_id
-            if user_id not in self.user_speak_order:
-                self.user_speak_order[user_id] = 0
-            order = self.user_speak_order[user_id]
-            speak.sentence.order = order
-            self.user_speak_order[user_id] += 1
+            speak.sentence.order = self.speak_order
+            self.speak_order += 1
 
-        speak_order = self.user_speak_order.copy()
+        speak_order = self.speak_order
         for speak in candidate:
-            user_id = speak.user_id
-            if user_id not in speak_order:
-                speak_order[user_id] = 0
-            order = speak_order[user_id]
-            speak.sentence.order = order
-            speak_order[user_id] += 1
+            speak.sentence.order = speak_order
+            speak_order += 1
 
         self.completed = completed
         self.candidate = candidate
