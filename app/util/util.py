@@ -24,6 +24,59 @@ def compress_to_opus(bytes: bytes):
     return out, err
 
 
+def mp4_bytes_to_ndarray(mp4_bytes: bytes, sr: int = 16000) -> np.ndarray:
+    process = subprocess.Popen(
+        [
+            "ffmpeg",
+            "-i",
+            "pipe:0",  # 입력을 stdin에서
+            "-f",
+            "f32le",  # 출력 포맷: float32
+            "-acodec",
+            "pcm_f32le",  # codec: float32 PCM
+            "-ac",
+            "1",  # mono
+            "-ar",
+            str(sr),  # sample rate
+            "pipe:1",  # 출력도 stdout으로
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    out, _ = process.communicate(input=mp4_bytes)
+    return np.frombuffer(out, dtype=np.float32)
+
+
+def ndarray_to_mp4_bytes(audio: np.ndarray, sr: int = 16000) -> bytes:
+    process = subprocess.Popen(
+        [
+            "ffmpeg",
+            "-f",
+            "f32le",  # raw float32 포맷
+            "-ac",
+            "1",  # mono
+            "-ar",
+            str(sr),  # sample rate
+            "-i",
+            "pipe:0",  # 입력을 stdin으로
+            "-c:a",
+            "aac",  # aac 코덱
+            "-b:a",
+            "128k",  # 비트레이트
+            "-f",
+            "mp4",  # 포맷
+            "pipe:1",  # 출력은 stdout
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    in_bytes = audio.astype(np.float32).tobytes()
+    out, _ = process.communicate(input=in_bytes)
+    return out
+
+
 def decompress_from_opus(bytes: bytes):
     process = subprocess.Popen(
         ["ffmpeg", "-i", "pipe:0", "-f", "wav", "pipe:1"],

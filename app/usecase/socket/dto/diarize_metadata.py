@@ -4,11 +4,12 @@ from functools import cached_property
 import numpy as np
 
 from core import Config
-from util.util import bytes_to_np, decompress_from_opus
+from util.util import bytes_to_np, decompress_from_opus, mp4_bytes_to_ndarray
 
 from .metadata import Metadata
 
 SAMPLE_RATE = Config.get_instance().config.service.sample_rate
+MIN_DURATION = 8000
 EMBEDDING_LENGTH = 512 * 4  # 4 bytes for float32
 
 
@@ -44,7 +45,11 @@ class DiarizeMetadata:
     def audio(self):
         if len(self.metadata.payload) == 0:
             return None
-        return DiarizeMetadata.__byte_to_audio(self.metadata.payload)
+        audio = DiarizeMetadata.__byte_to_audio(self.metadata.payload)
+        if audio.shape[0] < MIN_DURATION:
+            raise ValueError(
+                f"Audio length {audio.shape[0]} is less than minimum required duration {MIN_DURATION}"
+            )
 
     def refer(self):
         length = len(self.metadata.payload)
@@ -79,4 +84,8 @@ class DiarizeMetadata:
         # audio = bytes_to_np(audio, SAMPLE_RATE)
         # return audio.astype(np.float32)
 
-        return np.frombuffer(data, dtype=np.float32)
+        # NOTE  이건 임시로 한거다.. .좀 별로긴한데 프론트에서 통일 하는걸 빼먹었다.
+        return mp4_bytes_to_ndarray(data, SAMPLE_RATE)
+
+        # bytes decode
+        # return np.frombuffer(data, dtype=np.float32)
