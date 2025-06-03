@@ -1,6 +1,7 @@
 import io
 import math
 import re
+import tempfile
 import numpy as np
 import soundfile as sf
 from scipy.signal import resample_poly
@@ -25,56 +26,60 @@ def compress_to_opus(bytes: bytes):
 
 
 def mp4_bytes_to_ndarray(mp4_bytes: bytes, sr: int = 16000) -> np.ndarray:
-    process = subprocess.Popen(
-        [
-            "ffmpeg",
-            "-i",
-            "pipe:0",  # 입력을 stdin에서
-            "-f",
-            "f32le",  # 출력 포맷: float32
-            "-acodec",
-            "pcm_f32le",  # codec: float32 PCM
-            "-ac",
-            "1",  # mono
-            "-ar",
-            str(sr),  # sample rate
-            "pipe:1",  # 출력도 stdout으로
-        ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    out, _ = process.communicate(input=mp4_bytes)
-    return np.frombuffer(out, dtype=np.float32)
+    with tempfile.NamedTemporaryFile(suffix=".mp4") as tmp_in:
+        tmp_in.write(mp4_bytes)
+        tmp_in.flush()
+
+        process = subprocess.Popen(
+            [
+                "ffmpeg",
+                "-i",
+                tmp_in.name,  # ← 파일 기반 입력
+                "-f",
+                "f32le",  # 출력 포맷: float32 PCM
+                "-acodec",
+                "pcm_f32le",  # codec: float32 PCM
+                "-ac",
+                "1",  # mono
+                "-ar",
+                str(sr),  # sample rate
+                "pipe:1",  # 출력: stdout
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        out, _ = process.communicate()
+        return np.frombuffer(out, dtype=np.float32)
 
 
 def ndarray_to_mp4_bytes(audio: np.ndarray, sr: int = 16000) -> bytes:
-    process = subprocess.Popen(
-        [
-            "ffmpeg",
-            "-f",
-            "f32le",  # raw float32 포맷
-            "-ac",
-            "1",  # mono
-            "-ar",
-            str(sr),  # sample rate
-            "-i",
-            "pipe:0",  # 입력을 stdin으로
-            "-c:a",
-            "aac",  # aac 코덱
-            "-b:a",
-            "128k",  # 비트레이트
-            "-f",
-            "mp4",  # 포맷
-            "pipe:1",  # 출력은 stdout
-        ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    in_bytes = audio.astype(np.float32).tobytes()
-    out, _ = process.communicate(input=in_bytes)
-    return out
+    with tempfile.NamedTemporaryFile(suffix=".mp4") as tmp_out:
+        process = subprocess.Popen(
+            [
+                "ffmpeg",
+                "-f",
+                "f32le",
+                "-ac",
+                "1",
+                "-ar",
+                str(sr),
+                "-i",
+                "pipe:0",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
+                "-y",  # overwrite
+                tmp_out.name,
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        in_bytes = audio.astype(np.float32).tobytes()
+        process.communicate(input=in_bytes)
+        tmp_out.seek(0)
+        return tmp_out.read()
 
 
 def decompress_from_opus(bytes: bytes):

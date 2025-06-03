@@ -7,6 +7,7 @@ from core import Config
 from util.util import bytes_to_np, decompress_from_opus, mp4_bytes_to_ndarray
 
 from .metadata import Metadata
+from .flag import DIARIZATION_EMBED
 
 SAMPLE_RATE = Config.get_instance().config.service.sample_rate
 MIN_DURATION = 8000
@@ -44,12 +45,13 @@ class DiarizeMetadata:
     @cached_property
     def audio(self):
         if len(self.metadata.payload) == 0:
-            return None
+            raise ValueError("No audio data found in metadata payload")
         audio = DiarizeMetadata.__byte_to_audio(self.metadata.payload)
-        if audio.shape[0] < MIN_DURATION:
+        if self.flag == DIARIZATION_EMBED and audio.shape[0] < MIN_DURATION:
             raise ValueError(
                 f"Audio length {audio.shape[0]} is less than minimum required duration {MIN_DURATION}"
             )
+        return audio
 
     def refer(self):
         length = len(self.metadata.payload)
