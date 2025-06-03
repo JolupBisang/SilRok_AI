@@ -29,6 +29,14 @@ class DiarizeMetadata:
         return self.metadata.header["user_id"]
 
     @property
+    def user_ids(self):
+        return self.metadata.header.get("user_ids", [])
+
+    @property
+    def counts(self):
+        return self.metadata.header.get("counts", [])
+
+    @property
     def sc_offset(self):
         return self.metadata.header.get("sc_offset", None)
 
@@ -38,25 +46,25 @@ class DiarizeMetadata:
             return None
         return DiarizeMetadata.__byte_to_audio(self.metadata.payload)
 
-    def refer(self, loads: callable):
-        if len(self.metadata.payload) == 0:
-            return None
-
-        data, left = Metadata.byte_to_dict(self.metadata.payload, loads)
+    def refer(self):
+        length = len(self.metadata.payload)
+        if length == 0:
+            raise ValueError("No refer data found in metadata payload")
 
         start = 0
-        new_refer_dict = {}
-        for k in data:
-            new_refer_dict[k] = []
-        for k, v in data.items():
-            for _ in range(v):
+        refer_dict = {}
+        for user_id, count in zip(self.user_ids, self.counts):
+            refer_dict[user_id] = []
+            for _ in range(count):
                 end = start + EMBEDDING_LENGTH
-                new_refer_dict[k].append(
-                    np.frombuffer(left[start:end], dtype=np.float32)
+                refer_dict[user_id].append(
+                    np.frombuffer(
+                        self.metadata.payload[start:end],
+                        dtype=np.float32,
+                    )
                 )
                 start = end
-
-        return new_refer_dict
+        return refer_dict
 
     @staticmethod
     def from_metadata(metadata: Metadata):
@@ -71,6 +79,4 @@ class DiarizeMetadata:
         # audio = bytes_to_np(audio, SAMPLE_RATE)
         # return audio.astype(np.float32)
 
-        return np.frombuffer(
-            data, dtype=np.float32
-        )
+        return np.frombuffer(data, dtype=np.float32)

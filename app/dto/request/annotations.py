@@ -141,6 +141,38 @@ MeetingTopic = Annotated[
     ),
 ]
 
+UserIds = Annotated[
+    list[str],
+    Query(
+        min_length=1,
+        max_length=255,
+        title="user_ids",
+        description="화자 고유 ID 리스트 (최대 255개)",
+        examples={
+            "default": {
+                "summary": "기본 화자 ID 리스트",
+                "value": ["User123", "User456", "User789"],
+            },
+        },
+    ),
+]
+
+Counts = Annotated[
+    list[int],
+    Query(
+        min_length=1,
+        max_length=255,
+        title="counts",
+        description="화자별 임베딩 개수 리스트 (최대 255개)",
+        examples={
+            "default": {
+                "summary": "기본 임베딩 개수 리스트",
+                "value": [3, 2, 4],
+            },
+        },
+    ),
+]
+
 
 # File
 AudioFile = Annotated[
@@ -149,6 +181,15 @@ AudioFile = Annotated[
         title="audio",
         description="wav 음성 파일을 opus로 압축한 후 base64로 인코딩한 값",
         example="base64(opus(wav))",
+    ),
+]
+
+RefersFile = Annotated[
+    bytes,
+    File(
+        title="embed",
+        description="wav 음성 파일을 opus로 압축한 후 base64로 인코딩한 값, 임베딩 생성에 사용",
+        example="opus(wav)",
     ),
 ]
 
@@ -185,17 +226,5 @@ EmbeddingField = Annotated[
         max_length=2750,
         description="화자 임베딩 (배열 길이: 512, 바이트 길이: 2048, Base64 인코딩 후 크기: 2732)",
         example="Base64(bytes(embedding))",
-    ),
-]
-
-ReferField = Annotated[
-    dict[bytes, list[str]],  # dict[UserIdField, list[EmbeddingField]]
-    Field(
-        title="refer",
-        description="user_id → 임베딩 매핑, 임베딩은 get 요청으로 diarization/embedding에서 생성",
-        example={
-            "user_id": "Base64(Aq4JqL…f2Rk)",
-            "user_id2": "Base64(Aq4JqL…f2Rk)",
-        },
     ),
 ]
