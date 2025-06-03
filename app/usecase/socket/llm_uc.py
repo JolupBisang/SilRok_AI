@@ -110,9 +110,7 @@ class LLMUC(DiarizationUC):
     def _llm_sending_process(self, web_socket: WebSocket, sid: str):
         async def llm_sending_process(Y: LLMOutput):
             await web_socket.send_bytes(
-                self._pack_func[sid]["dumps"](
-                    LLMResponse.from_llm_output(Y).model_dump()
-                )
+                LLMResponse.from_llm_output(Y).to_byte(self._pack_func[sid]["dumps"])
             )
 
         return llm_sending_process
@@ -120,8 +118,8 @@ class LLMUC(DiarizationUC):
     def _llm_context_sending_process(self, web_socket: WebSocket, sid: str):
         async def llm_context_context_sending_process(Y: LLMOutput):
             await web_socket.send_bytes(
-                self._pack_func[sid]["dumps"](
-                    LLMContextResponse.from_llm_output(Y).model_dump()
+                LLMContextResponse.from_llm_output(Y).to_byte(
+                    self._pack_func[sid]["dumps"]
                 )
             )
 

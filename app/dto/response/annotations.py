@@ -66,10 +66,10 @@ Feedback = Annotated[
 ]
 
 Embedding = Annotated[
-    str,
+    bytes,
     Field(
-        min_length=2700,
-        max_length=2750,
+        min_length=2048,
+        max_length=2048,
         description="화자 임베딩 (배열 길이: 512, 바이트 길이: 2048, Base64 인코딩 후 크기: 2732)",
         example="Base64(bytes(embedding))",
     ),

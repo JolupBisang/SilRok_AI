@@ -11,6 +11,8 @@ msgpack
 pydantic
 beartype
 ray
+dependency_injector
+pyyaml
 
 # torch
 torch

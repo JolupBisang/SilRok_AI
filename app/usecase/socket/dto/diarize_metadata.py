@@ -66,6 +66,11 @@ class DiarizeMetadata:
 
     @staticmethod
     def __byte_to_audio(data: bytes):
-        audio, _ = decompress_from_opus(data)
-        audio = bytes_to_np(audio, SAMPLE_RATE)
-        return audio.astype(np.float32)
+        # opus decode
+        # audio, _ = decompress_from_opus(data)
+        # audio = bytes_to_np(audio, SAMPLE_RATE)
+        # return audio.astype(np.float32)
+
+        return np.frombuffer(
+            data, dtype=np.float32
+        )

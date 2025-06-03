@@ -17,4 +17,4 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip \
 COPY . /workspaces/app
 
 ENV PYTHONPATH=/workspaces/app:/workspaces/app/RTWhisper/modules
-CMD ["sh", "-c", "cd /workspaces/app && /usr/bin/python3 app/main.py"]
+CMD ["sh", "-c", "cd /workspaces/app && /usr/bin/python3 app/main.py >> /workspaces/app/logs/server.log 2>&1"]

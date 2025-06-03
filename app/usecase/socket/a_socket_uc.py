@@ -7,6 +7,8 @@ from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 import msgpack
 
+from dto.response import ErrorResponse
+
 from .dto import Metadata
 
 MSGPACK = "msgpack"
@@ -37,11 +39,16 @@ class ASocketUC(ABC):
 
     async def _transceive(self, web_socket: WebSocket, sid: str):
         while True:
-            byte = await web_socket.receive_bytes()
-            self.logger.debug(f"WebSocket received")
-            metadata = Metadata.from_byte(byte, self._pack_func[sid]["loads"])
+            try:
+                byte = await web_socket.receive_bytes()
+                self.logger.debug(f"WebSocket received")
+                metadata = Metadata.from_byte(byte, self._pack_func[sid]["loads"])
 
-            await self._run(web_socket, sid, metadata)
+                await self._run(web_socket, sid, metadata)
+            except Exception as e:
+                web_socket.send_bytes(
+                    self._pack_func[sid]["dumps"](ErrorResponse(str(e)))
+                )
 
     async def disconnect(self, web_socket: WebSocket, sid: str):
         self.__remaining_connections += 1
