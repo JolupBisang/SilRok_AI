@@ -33,7 +33,7 @@ class Broker:
         self,
         consumer_pid_list: list[int],
     ):
-        from core import logging_manager
+        from core import logging_manager, Config
 
         self.__group_to_pid = {}
         self.__pid_to_group = {pid: [] for pid in consumer_pid_list}
@@ -44,7 +44,9 @@ class Broker:
         self.__queue_merger = Queue(maxsize=self.__MAX_QUEUE_SIZE)
         self.__result = Queue(maxsize=self.__MAX_QUEUE_SIZE)
 
-        self.logger = logging_manager.generate("broker", logging.INFO)
+        self.logger = logging_manager.generate(
+            "broker", Config.get_instance().config.server.log_level
+        )
 
     def __get_pid_by_group_id(self, group_id: str):
         if group_id in self.__group_to_pid:

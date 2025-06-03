@@ -46,6 +46,7 @@ class ASocketUC(ABC):
 
                 await self._run(web_socket, sid, metadata)
             except Exception as e:
+                self.logger.error(f"WebSocket error: {e}")
                 await web_socket.send_bytes(
                     self._pack_func[sid]["dumps"](
                         ErrorResponse(error=str(e)).model_dump()
