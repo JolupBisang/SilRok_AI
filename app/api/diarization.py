@@ -37,14 +37,25 @@ async def embed_file(
     return await diarization_uc.embed(diarization_embed_request)
 
 
-@router.post("/refer", response_model=DiarizationResponse)
+@router.post("/refer_stream", response_model=DiarizationResponse)
 @inject
 async def refer(
-    diarization_refer_request: DiarizationReferRequest,
+    diarization_refer_request: DiarizationReferRequest = Depends(
+        DiarizationReferRequest.as_stream
+    ),
     diarization_uc: DiarizationUC = Depends(Provide[Container.diarization_uc]),
 ):
     return await diarization_uc.refer(diarization_refer_request)
 
+@router.post("/refer_file", response_model=DiarizationResponse)
+@inject
+async def refer_file(
+    diarization_refer_request: DiarizationReferRequest = Depends(
+        DiarizationReferRequest.as_file
+    ),
+    diarization_uc: DiarizationUC = Depends(Provide[Container.diarization_uc]),
+):
+    return await diarization_uc.refer(diarization_refer_request)
 
 @router.post("/diarize_stream", response_model=DiarizationResponse)
 @inject

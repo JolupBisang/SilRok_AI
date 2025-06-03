@@ -21,6 +21,8 @@ from services.rt_diarization import (
 )
 from util.util import bytes_to_np, decompress_from_opus
 
+EMBEDDING_LENGTH = 512 * 4  # 4 bytes for float32
+
 
 class DiarizationUC:
 
@@ -128,14 +130,21 @@ class DiarizationUC:
 
     async def refer(self, diarization_refer_request: DiarizationReferRequest):
         refer = {}
-        for key, value in diarization_refer_request.refer.items():
-            refer[key] = [
-                np.frombuffer(
-                    base64.b64decode(v),
-                    dtype=np.float32,
+        start = 0
+        for user_id, count in zip(
+            diarization_refer_request.user_ids,
+            diarization_refer_request.counts,
+        ):
+            refer[user_id] = []
+            for _ in range(count):
+                end = start + EMBEDDING_LENGTH
+                refer[user_id].append(
+                    np.frombuffer(
+                        diarization_refer_request.refers[start:end],
+                        dtype=np.float32,
+                    )
                 )
-                for v in value
-            ]
+                start = end
 
         return DiarizationResponse.from_rt_diarization_output(
             await self.__diarize(

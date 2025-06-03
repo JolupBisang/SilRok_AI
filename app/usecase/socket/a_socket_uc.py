@@ -46,8 +46,10 @@ class ASocketUC(ABC):
 
                 await self._run(web_socket, sid, metadata)
             except Exception as e:
-                web_socket.send_bytes(
-                    self._pack_func[sid]["dumps"](ErrorResponse(str(e)))
+                await web_socket.send_bytes(
+                    self._pack_func[sid]["dumps"](
+                        ErrorResponse(error=str(e)).model_dump()
+                    )
                 )
 
     async def disconnect(self, web_socket: WebSocket, sid: str):
