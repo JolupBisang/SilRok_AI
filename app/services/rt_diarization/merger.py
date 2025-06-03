@@ -25,10 +25,12 @@ class Merger:
         self,
         broker: Broker,
     ):
-        from core import logging_manager
+        from core import logging_manager, Config
 
         self.broker = broker
-        self.logger = logging_manager.generate("merger", logging.INFO)
+        self.logger = logging_manager.generate(
+            "merger", Config.get_instance().config.server.log_level
+        )
         self.__task = None
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
 

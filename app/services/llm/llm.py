@@ -27,13 +27,15 @@ class LLM:
 
     def init(self):
         from containers import Container
-        from core import logging_manager
+        from core import logging_manager, Config
 
         manager = Container.get_manager()
         manager.init_llm()
 
         self.gemini = manager.container.gemini()
-        self.logger = logging_manager.generate("llm", logging.INFO)
+        self.logger = logging_manager.generate(
+            "llm", Config.get_instance().config.server.log_level
+        )
 
         self.__locks = defaultdict(asyncio.Lock)
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
