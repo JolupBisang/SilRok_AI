@@ -93,18 +93,16 @@ class DiarizationUC:
     async def __embed(self, audio: np.ndarray, sample_rate: int):
         # ㅋㅋ 극한의 압축
         return DiarizationEmbedResponse(
-            user_id = "",
-            embedding=base64.b64encode(
-                (
-                    await self.embed_service.request(
-                        EmbedInput(
-                            user_id="",
-                            audio=audio,
-                            sample_rate=sample_rate,
-                        )
+            user_id="",
+            embedding=(
+                await self.embed_service.request(
+                    EmbedInput(
+                        user_id="",
+                        audio=audio,
+                        sample_rate=sample_rate,
                     )
-                ).embedding.tobytes()
-            ).decode("utf-8"),
+                )
+            ).embedding.tobytes(),
         )
 
     def __bytes_to_np(self, opus_bytes: bytes, sample_rate: int):

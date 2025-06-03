@@ -106,8 +106,8 @@ class DiarizationUC(ASocketUC):
     def _diarization_sending_process(self, web_socket: WebSocket, sid: str):
         async def diarization_sending_process(Y: RTDiarizationOutput):
             await web_socket.send_bytes(
-                self._pack_func[sid]["dumps"](
-                    DiarizationResponse.from_rt_diarization_output(Y).model_dump()
+                DiarizationResponse.from_rt_diarization_output(Y).to_byte(
+                    self._pack_func[sid]["dumps"]
                 )
             )
 
@@ -116,8 +116,8 @@ class DiarizationUC(ASocketUC):
     def _embed_sending_process(self, web_socket: WebSocket, sid: str):
         async def llm_sending_process(Y: EmbedOutput):
             await web_socket.send_bytes(
-                self._pack_func[sid]["dumps"](
-                    DiarizationEmbedResponse.from_embed_output(Y).model_dump()
+                DiarizationEmbedResponse.from_embed_output(Y).to_byte(
+                    self._pack_func[sid]["dumps"]
                 )
             )
 
