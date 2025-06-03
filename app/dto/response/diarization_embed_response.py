@@ -17,6 +17,14 @@ class DiarizationEmbedResponse(BaseModel):
         bt = dump_func(self.model_dump(exclude={"embedding"}))
         return len(bt).to_bytes(4, "big") + bt + self.embedding
 
+    # NOTE Http Response를 위해 임시로 조치
+    def to_dict(self):
+        return {
+            "user_id": self.user_id,
+            "embedding": base64.b64encode(self.embedding).decode("utf-8"),
+            "flag": self.flag,
+        }
+
     @staticmethod
     def from_embed_output(embed_output: EmbedOutput) -> "DiarizationEmbedResponse":
         return DiarizationEmbedResponse(

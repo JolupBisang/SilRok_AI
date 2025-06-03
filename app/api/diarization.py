@@ -13,7 +13,8 @@ from usecase.diarization import DiarizationUC
 router = APIRouter()
 
 
-@router.post("/embed_stream", response_model=DiarizationEmbedResponse)
+# @router.post("/embed_stream", response_model=DiarizationEmbedResponse)
+@router.post("/embed_stream", response_model=dict)
 @inject
 async def embed_stream(
     diarization_embed_request: DiarizationEmbedRequest = Depends(
@@ -24,7 +25,8 @@ async def embed_stream(
     return await diarization_uc.embed(diarization_embed_request)
 
 
-@router.post("/embed_file", response_model=DiarizationEmbedResponse)
+# @router.post("/embed_file", response_model=DiarizationEmbedResponse)
+@router.post("/embed_file", response_model=dict)
 @inject
 async def embed_file(
     diarization_embed_request: DiarizationEmbedRequest = Depends(

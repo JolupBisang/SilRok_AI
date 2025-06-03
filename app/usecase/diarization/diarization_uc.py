@@ -92,22 +92,23 @@ class DiarizationUC:
 
     async def __embed(self, audio: np.ndarray, sample_rate: int):
         # ㅋㅋ 극한의 압축
-        return DiarizationEmbedResponse(
-            user_id="",
-            embedding=(
-                await self.embed_service.request(
-                    EmbedInput(
-                        user_id="",
-                        audio=audio,
-                        sample_rate=sample_rate,
-                    )
+        return DiarizationEmbedResponse.from_embed_output(
+            await self.embed_service.request(
+                EmbedInput(
+                    user_id="",
+                    audio=audio,
+                    sample_rate=sample_rate,
                 )
-            ).embedding.tobytes(),
-        )
+            )
+        ).to_dict()
 
     def __bytes_to_np(self, opus_bytes: bytes, sample_rate: int):
-        wav_bytes, _ = decompress_from_opus(opus_bytes)
-        return bytes_to_np(wav_bytes, sample_rate)
+        # opus
+        # wav_bytes, _ = decompress_from_opus(opus_bytes)
+        # return bytes_to_np(wav_bytes, sample_rate)
+
+        # NOTE 임시 조치
+        return np.frombuffer(opus_bytes, dtype=np.float32)
 
     async def diarize(self, diarization_request: DiarizationRequest):
         Y = await self.__diarize(
