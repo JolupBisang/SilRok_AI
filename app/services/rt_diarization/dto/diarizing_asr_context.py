@@ -11,24 +11,24 @@ from .speak import Speak
 
 @dataclass(slots=True)
 class DiarizingASRContext:
-    uuid: str
-    group_id: str
-    user_id: str
+    uuid: str = field()
+    group_id: str = field()
+    user_id: str = field()
 
     # asr param
-    param: Param = field(default_factory=Param)
-    asr_completed: list[Sentence] = field(default_factory=list)
-    asr_candidate: list[Sentence] = field(default_factory=list)
+    param: Param = field(default_factory=Param, repr=False)
+    asr_completed: list[Sentence] = field(default_factory=list, repr=False)
+    asr_candidate: list[Sentence] = field(default_factory=list, repr=False)
 
     # diarization param
     clustering: FixedBufferClustering = field(
-        default_factory=lambda: FixedBufferClustering({})
+        default_factory=lambda: FixedBufferClustering({}), repr=False
     )
-    audio: np.ndarray = field(default_factory=lambda: np.zeros((0,), dtype=np.float32))
-    offset: int = 0
+    audio: np.ndarray = field(default_factory=lambda: np.zeros((0,), dtype=np.float32), repr=False)
+    offset: int = field(default=0, repr=False)
 
-    diarization_completed: list[Speak] = field(default_factory=list)
-    diarization_candidate: list[Speak] = field(default_factory=list)
+    diarization_completed: list[Speak] = field(default_factory=list, repr=False)
+    diarization_candidate: list[Speak] = field(default_factory=list, repr=False)
 
     def __asr_update(self, audio: np.ndarray, prompt: str = None, language: str = None):
         self.param.audio = np.concatenate([self.param.audio, audio])

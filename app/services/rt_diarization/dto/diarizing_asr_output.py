@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .diarizing_asr_context import DiarizingASRContext
 from .speak import Speak
@@ -6,11 +6,11 @@ from .speak import Speak
 
 @dataclass(slots=True)
 class DiarizingASROutput:
-    uuid: str
-    group_id : str
-    user_id: str
-    completed: list[Speak]
-    candidate: list[Speak]
+    uuid: str = field()
+    group_id: str = field()
+    user_id: str = field()
+    completed: list[Speak] = field()
+    candidate: list[Speak] = field()
 
     @staticmethod
     def from_diarizing_asr_context(context: DiarizingASRContext):

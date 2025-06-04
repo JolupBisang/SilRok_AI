@@ -1,12 +1,12 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 
 @dataclass(slots=True)
 class EmbedOutput:
-    user_id: str
-    embedding: np.ndarray
+    user_id: str = field()
+    embedding: np.ndarray = field(repr=False)
 
     # NOTE 위치가 좀 애매하긴 함
     def model_dump(self) -> dict:

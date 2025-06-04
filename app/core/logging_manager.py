@@ -11,6 +11,7 @@ DEFAULT_LOG_LEVEL = config.config.server.log_level
 
 
 def setup_main_logging():
+    return
 
     # FIXME 로깅 설정에 문제 있음
     logging.config.dictConfig(
@@ -66,18 +67,17 @@ def setup_main_logging():
 
 def generate(name: str, level: int = DEFAULT_LOG_LEVEL):
     logger = logging.getLogger(name)
-    if logger.hasHandlers():
-        return logger
-
     logger.setLevel(level)
     logger.propagate = False
 
-    logger.addHandler(RichHandler())
+    if not any(isinstance(h, RichHandler) for h in logger.handlers):
+        logger.addHandler(RichHandler())
 
     log_path = LOG_DIR_PATH / f"{name}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    file_handler = logging.FileHandler(log_path, encoding="utf-8")
-    file_handler.setLevel(level)
-    logger.addHandler(file_handler)
+    if not any(isinstance(h, logging.FileHandler) and h.baseFilename == str(log_path) for h in logger.handlers):
+        file_handler = logging.FileHandler(log_path, encoding="utf-8")
+        file_handler.setLevel(level)
+        logger.addHandler(file_handler)
 
     return logger

@@ -1,21 +1,16 @@
 from dataclasses import dataclass, field
-from typing import Union
 
 from .flag import *
 
 
 @dataclass(slots=True)
 class LLMInput:
-    group_id: str
+    group_id: str = field()
     conversation: str = field(default="")
     mode: str = field(default=REQUEST)
-    agenda: Union[list[str], None] = field(default=None)
-    num_people: Union[int, None] = field(default=None)
-    meeting_topic: Union[str, None] = field(default=None)
-
-    DONE = DONE
-    REQUEST = REQUEST
-    UPDATE = UPDATE
+    agenda: list[str] | None = field(default=None)
+    num_people: int | None = field(default=None)
+    meeting_topic: str | None = field(default=None)
 
     # Override
     def __post_init__(self):

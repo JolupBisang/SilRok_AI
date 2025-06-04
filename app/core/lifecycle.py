@@ -6,7 +6,10 @@ async def startup(app: FastAPI):
     from . import logger
     from containers import Container
 
-    await Container.get_manager().init_main()
+    try:
+        await Container.get_manager().init_main()
+    except Exception as e:
+        raise SystemExit(f"❌ FastAPI 서버 시작 실패: {e}. ")
 
     # logging.getLogger("uvicorn").setLevel(logging.WARNING)
     # logging.getLogger("uvicorn.access").setLevel(logging.WARNING)

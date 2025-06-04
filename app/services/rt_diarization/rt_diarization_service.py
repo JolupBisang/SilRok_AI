@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Union
+from typing import Any, Callable
 import ray
 import asyncio
 from dependency_injector.resources import AsyncResource
@@ -7,7 +7,7 @@ from dependency_injector.resources import AsyncResource
 from .diarizing_asr import DiarizingASR
 from .broker import Broker
 from .merger import Merger
-from .dto import DiarizingASRInput, MergerOutput, DiarizingASROutput
+from .dto import DiarizingASRInput, MergerOutput, DiarizingASROutput, RTDiarizationError
 
 
 class RTDiarizationService(AsyncResource):
@@ -83,6 +83,7 @@ class RTDiarizationService(AsyncResource):
         await self.merger.close.remote()
         await self.broker.close.remote()
         self.__task = None
+        self.logger.info("Service shutdown complete")
 
     async def run(self):
         if self.__task is not None:
@@ -99,22 +100,31 @@ class RTDiarizationService(AsyncResource):
         self.logger.info("Service started")
         try:
             while True:
-                Y: Union[MergerOutput, DiarizingASROutput] = (
+                Y: MergerOutput | DiarizingASROutput | RTDiarizationError | Any = (
                     await self.broker.get_result.remote()
                 )
                 if Y == "END":
                     break
 
-                try:
+                if isinstance(Y, RTDiarizationError):
                     async with self.__lock:
-                        await self.__callbacks[Y.uuid](Y)
-                except Exception as e:
-                    self.logger.warning(f"Callback not found for {e}")
+                        await self.__callbacks[Y.uuid](None, Y.error)
+                elif isinstance(Y, MergerOutput) or isinstance(Y, DiarizingASROutput):
+                    async with self.__lock:
+                        await self.__callbacks[Y.uuid](Y, None)
+                else:
+                    self.logger.warning(f"Unknown type received: {type(Y)} and {Y}")
         except BaseException as e:
             self.logger.error(f"Error in service: {e}")
         self.logger.info("Service stopped")
 
-    async def add_callback(self, sid: str, callback: callable):
+    async def add_callback(
+        self,
+        sid: str,
+        callback: Callable[
+            [DiarizingASROutput | MergerOutput | None], Exception | None
+        ],
+    ):
         async with self.__lock:
             self.__callbacks[sid] = callback
 

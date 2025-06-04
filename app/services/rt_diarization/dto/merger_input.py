@@ -6,11 +6,11 @@ from .speak import Speak
 
 @dataclass(slots=True)
 class MergerInput:
-    uuid: str
-    group_id: str
-    user_id: str
-    completed: list[Speak]
-    candidate: list[Speak]
+    uuid: str = field()
+    group_id: str = field()
+    user_id: str = field()
+    completed: list[Speak] = field(repr=False)
+    candidate: list[Speak] = field(repr=False)
 
     # 임의 변수
     must_return: bool = field(default=False)

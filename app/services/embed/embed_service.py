@@ -2,7 +2,6 @@ import asyncio
 from logging import Logger
 from typing import Callable
 from dependency_injector.resources import AsyncResource
-import numpy as np
 import ray
 
 from .embed import Embed
@@ -21,23 +20,26 @@ class EmbedService(AsyncResource):
         self.embed = Embed.remote()
         await self.embed.init.remote()
 
+        self.logger.info("Embed service initialized")
         return self
 
     async def shutdown(self, _: "EmbedService") -> None:
         await self.embed.close.remote()
+        self.logger.info("Embed service closed")
 
-    async def request(self, X: EmbedInput) -> np.ndarray:
+    async def request(self, X: EmbedInput) -> EmbedOutput:
         return await self.embed.request.remote(X)
 
     def request_with_callback(
-        self, X: EmbedInput, callback: Callable[[EmbedOutput], None]
+        self,
+        X: EmbedInput,
+        callback: Callable[[EmbedOutput | None, Exception | None], None],
     ) -> None:
         async def _run() -> None:
             try:
-                result = await self.request(X)
-                if result is not None:
-                    await callback(result)
+                return await callback(await self.request(X), None)
             except Exception as e:
-                print(f"Error in callback: {e}")
+                self.logger.error(f"Error processing request: {e}")
+                return await callback(None, e)
 
         asyncio.create_task(_run())

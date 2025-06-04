@@ -19,7 +19,7 @@ from services.rt_diarization import (
     RTDiarizationService,
     Speak,
 )
-from util.util import bytes_to_np, decompress_from_opus
+from util.util import mp4_bytes_to_ndarray
 
 EMBEDDING_LENGTH = 512 * 4  # 4 bytes for float32
 
@@ -83,13 +83,19 @@ class DiarizationUC:
         )
         fut = asyncio.get_running_loop().create_future()
 
-        async def callback(Y: RTDiarizationOutput):
+        async def callback(Y: RTDiarizationOutput | None, e: Exception | None):
+            if e is not None:
+                fut.set_exception(e)
             fut.set_result(Y)
 
         await self.rt_diarization_service.add_callback(uid, callback)
         await self.rt_diarization_service.request(X)
-        Y = await fut
-        await self.rt_diarization_service.remove_callback(uid)
+        try:
+            Y = await fut
+        except Exception as e:
+            raise e
+        finally:
+            await self.rt_diarization_service.remove_callback(uid)
         return Y
 
     async def __embed(self, audio: np.ndarray, sample_rate: int):
@@ -104,19 +110,13 @@ class DiarizationUC:
             )
         ).to_dict()
 
-    def __bytes_to_np(self, opus_bytes: bytes, sample_rate: int):
-        # opus
-        # wav_bytes, _ = decompress_from_opus(opus_bytes)
-        # return bytes_to_np(wav_bytes, sample_rate)
-
-        # NOTE 임시 조치
-        return np.frombuffer(opus_bytes, dtype=np.float32)
-
     async def diarize(self, diarization_request: DiarizationRequest):
         Y = await self.__diarize(
             group_id=diarization_request.group_id,
             user_id=diarization_request.user_id,
-            audio=self.__bytes_to_np(diarization_request.audio, self.__SAMPLE_RATE),
+            audio=(
+                np.frombuffer(diarization_request.audio, dtype=np.int16) / 32768.0
+            ).astype(np.float32),
             sc_offset=diarization_request.sc_offset,
         )
 
@@ -157,8 +157,9 @@ class DiarizationUC:
 
     async def embed(self, diarization_embed_request: DiarizationEmbedRequest):
         return await self.__embed(
-            self.__bytes_to_np(
-                diarization_embed_request.audio, diarization_embed_request.sample_rate
+            mp4_bytes_to_ndarray(
+                diarization_embed_request.audio,
+                diarization_embed_request.sample_rate,
             ),
             diarization_embed_request.sample_rate,
         )

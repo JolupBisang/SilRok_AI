@@ -8,8 +8,8 @@ from .flag import *
 
 @dataclass(slots=True)
 class LLMContext:
-    group_id: str
-    model: ChatSession
+    group_id: str = field()
+    model: ChatSession = field(repr=False)
 
     mode: str = field(default=REQUEST)
     agenda: str = field(default="")
@@ -18,18 +18,12 @@ class LLMContext:
 
     conversation: str = field(default_factory=str)
 
-    response: str = field(default="")
-
-    result_context: str = field(default="")
-    result_agenda: list[int] = field(default_factory=list)
-    result_feedback: dict[str, str] = field(default_factory=dict)
-
-    __PROMPT: str = field(default=PROMPT)
-    __BACKGROUND: str = field(default=BACKGROUND)
-    __AGENDA: str = field(default=AGENDA)
-    __FEEDBACK: str = field(default=FEEDBACK)
-    __JUST_SEND: str = field(default=JUST_SEND)
-    __FINAL_PROMPT: str = field(default=FINAL_PROMPT)
+    __PROMPT: str = field(default=PROMPT, repr=False, init=False)
+    __BACKGROUND: str = field(default=BACKGROUND, repr=False, init=False)
+    __AGENDA: str = field(default=AGENDA, repr=False, init=False)
+    __FEEDBACK: str = field(default=FEEDBACK, repr=False, init=False)
+    __JUST_SEND: str = field(default=JUST_SEND, repr=False, init=False)
+    __FINAL_PROMPT: str = field(default=FINAL_PROMPT, repr=False, init=False)
 
     def update(self, X: LLMInput):
         if X.group_id != self.group_id:

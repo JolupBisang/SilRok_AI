@@ -3,6 +3,7 @@
 from .dto import DiarizingASRInput as RTDiarizationInput
 from .dto import MergerOutput as RTDiarizationOutput
 from .dto import Speak
+from .dto import RTDiarizationError
 from .rt_diarization_service import RTDiarizationService
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "RTDiarizationInput",
     "RTDiarizationOutput",
     "Speak",
+    "RTDiarizationError",
 ]

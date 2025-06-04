@@ -46,11 +46,16 @@ class DiarizeMetadata:
     def audio(self):
         if len(self.metadata.payload) == 0:
             raise ValueError("No audio data found in metadata payload")
-        audio = DiarizeMetadata.__byte_to_audio(self.metadata.payload)
-        if self.flag == DIARIZATION_EMBED and audio.shape[0] < MIN_DURATION:
-            raise ValueError(
-                f"Audio length {audio.shape[0]} is less than minimum required duration {MIN_DURATION}"
-            )
+        if self.flag == DIARIZATION_EMBED:
+            audio = mp4_bytes_to_ndarray(self.metadata.payload, SAMPLE_RATE)
+            if audio.shape[0] < MIN_DURATION:
+                raise ValueError(
+                    f"Audio length {audio.shape[0]} is less than minimum required duration {MIN_DURATION}"
+                )
+        else:
+            audio = (np.frombuffer(self.metadata.payload, dtype=np.int16) / 32768.0).astype(np.float32)
+            # nan등 이상치 처리
+            # audio = np.nan_to_num(audio, nan=0.0, posinf=0.0, neginf=0.0)
         return audio
 
     def refer(self):
@@ -78,16 +83,3 @@ class DiarizeMetadata:
         return DiarizeMetadata(
             metadata=metadata,
         )
-
-    @staticmethod
-    def __byte_to_audio(data: bytes):
-        # opus decode
-        # audio, _ = decompress_from_opus(data)
-        # audio = bytes_to_np(audio, SAMPLE_RATE)
-        # return audio.astype(np.float32)
-
-        # NOTE  이건 임시로 한거다.. .좀 별로긴한데 프론트에서 통일 하는걸 빼먹었다.
-        return mp4_bytes_to_ndarray(data, SAMPLE_RATE)
-
-        # bytes decode
-        # return np.frombuffer(data, dtype=np.float32)
