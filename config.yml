@@ -1,7 +1,7 @@
 server:
     name: SilRok AI Server
     version: 1.0.0
-    log_level: 10 # INFO: 20, DEBUG: 10
+    log_level: 20 # INFO: 20, DEBUG: 10
     log_dir: ${LOG_DIR:./logs}
 
 api:

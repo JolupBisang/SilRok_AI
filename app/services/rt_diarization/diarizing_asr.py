@@ -95,6 +95,8 @@ class DiarizingASR:
                     try:
                         context = self.__get_context(X)
                         context.update(X)
+                        # TODO 서비스 내부에서, 모르는 언어가 나오면 빈 공백으로 처리할 필요성이 있다.
+                        # 또한, 이에 따라 문장이 완성되지 않았음에도 출력해야한다.
                         merger_X, Y = await self.__service(context)
                     except Exception as e:
                         self.logger.error(f"Diarizing ASR service error: {e}")
@@ -152,7 +154,7 @@ class DiarizingASR:
             await self.__diarize(context)
             # self.logger.info("Diarization done")
         except Exception as e:
-            self.logger.error(f"Diarizing ASR service error: {e}")
+            self.logger.error(f"processing ASR service error: {e}")
             raise e
 
         merger_X = MergerInput.from_diarizing_asr_context(context)

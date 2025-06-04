@@ -45,10 +45,10 @@ class LLMService(AsyncResource):
     ) -> None:
         async def _run() -> None:
             try:
-                return await callback(await self.request(X), None)
+                await callback(await self.request(X), None)
             except Exception as e:
                 self.logger.error(f"Error in callback: {e}")
-                return await callback(None, e)
+                await callback(None, e)
 
         asyncio.create_task(_run())
 

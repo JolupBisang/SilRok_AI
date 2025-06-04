@@ -24,9 +24,11 @@ class LLMUC(DiarizationUC):
         self.llm_service = llm_service
         self.__callbacks: dict[str, Callable[[LLMOutput], None]] = {}
 
-    def __request_update(
-        self, Y: RTDiarizationOutput, callback: Callable[[LLMOutput], None]
-    ):
+    def __request_update(self, Y: RTDiarizationOutput):
+        async def empty_callback(*args, **kwargs):
+            # This callback does nothing, but is required to avoid errors
+            pass
+
         self.llm_service.request_with_callback(
             LLMInput(
                 group_id=Y.group_id,
@@ -35,7 +37,7 @@ class LLMUC(DiarizationUC):
                     f"{s.user_id}: {s.sentence.text}" for s in Y.completed
                 ),
             ),
-            callback,
+            empty_callback,
         )
 
     def __request_metadata(
@@ -101,8 +103,8 @@ class LLMUC(DiarizationUC):
         dsp = super()._diarization_sending_process(web_socket, sid)
 
         async def llm_register(Y: RTDiarizationOutput | None, e: Exception | None):
-            if e is not None and Y.uuid == sid and Y.completed:
-                self.__request_update(Y, self.__callbacks[sid])
+            if Y is not None and Y.uuid == sid and Y.completed:
+                self.__request_update(Y)
             await dsp(Y, e)
 
         return llm_register
