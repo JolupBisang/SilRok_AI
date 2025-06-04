@@ -152,7 +152,7 @@ class DiarizingASR:
             await self.__diarize(context)
             # self.logger.info("Diarization done")
         except Exception as e:
-            self.logger.error(f"Diarizing ASR service error: {e}")
+            self.logger.error(f"processing ASR service error: {e}")
             raise e
 
         merger_X = MergerInput.from_diarizing_asr_context(context)

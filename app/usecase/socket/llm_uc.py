@@ -101,8 +101,8 @@ class LLMUC(DiarizationUC):
         dsp = super()._diarization_sending_process(web_socket, sid)
 
         async def llm_register(Y: RTDiarizationOutput | None, e: Exception | None):
-            if e is not None and Y.uuid == sid and Y.completed:
-                self.__request_update(Y, self.__callbacks[sid])
+            if Y is not None and Y.uuid == sid and Y.completed:
+                self.__request_update(Y, self.__callbacks[sid]["general"])
             await dsp(Y, e)
 
         return llm_register
