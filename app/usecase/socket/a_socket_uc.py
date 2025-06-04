@@ -42,15 +42,13 @@ class ASocketUC(ABC):
             try:
                 byte = await web_socket.receive_bytes()
                 self.logger.debug(f"WebSocket received")
-                metadata = Metadata.from_byte(byte, self._pack_func[sid]["loads"])
+                metadata = Metadata.from_bytes(byte, self._pack_func[sid]["loads"])
 
                 await self._run(web_socket, sid, metadata)
             except Exception as e:
                 self.logger.error(f"WebSocket error: {e}")
                 await web_socket.send_bytes(
-                    self._pack_func[sid]["dumps"](
-                        ErrorResponse(error=str(e)).model_dump()
-                    )
+                    ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
                 )
 
     async def disconnect(self, web_socket: WebSocket, sid: str):

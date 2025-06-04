@@ -6,6 +6,7 @@ from .diarizing_asr_output import DiarizingASROutput
 from .merger_context import MergerContext
 from .merger_input import MergerInput
 from .merger_output import MergerOutput
+from .rt_diarization_error import RTDiarizationError
 
 from .speak import Speak
 
@@ -17,4 +18,5 @@ __all__ = [
     "MergerInput",
     "MergerOutput",
     "Speak",
+    "RTDiarizationError",
 ]

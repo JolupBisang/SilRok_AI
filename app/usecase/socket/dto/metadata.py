@@ -19,15 +19,15 @@ class Metadata:
         return self.header["group_id"]
 
     @staticmethod
-    def from_byte(data: bytes, loads: callable):
+    def from_bytes(data: bytes, loads: callable):
         header, payload = Metadata.byte_to_dict(data, loads)
 
         if header["flag"] not in FLAGS:
             raise ValueError(f"Invalid flag: {header['flag']}")
 
         return Metadata(
-            header = header,
-            payload = payload,
+            header=header,
+            payload=payload,
         )
 
     @staticmethod

@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import ray
 
 from util import LRUDict
@@ -25,12 +24,10 @@ class Merger:
         self,
         broker: Broker,
     ):
-        from core import logging_manager, Config
+        from core import logging_manager
 
         self.broker = broker
-        self.logger = logging_manager.generate(
-            "merger", Config.get_instance().config.server.log_level
-        )
+        self.logger = logging_manager.generate("merger")
         self.__task = None
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
 
@@ -57,7 +54,7 @@ class Merger:
                 X: MergerInput = await self.broker.get_merger_task.remote()
                 if X == "END":
                     break
-                self.logger.debug(f"Merger X received")
+                self.logger.debug(f"Merger received {X}")
 
                 context = self.__get_context(X)
                 context.update(X)
@@ -74,7 +71,7 @@ class Merger:
                         MergerOutput.from_merger_context(context)
                     )
 
-                self.logger.debug(f"Merger processed")
+                self.logger.debug(f"Merger processed {Y}")
         except BaseException as e:
             self.logger.error(f"Merger consumer error: {e}")
         self.logger.info("Merger consumer stopped")
@@ -107,3 +104,4 @@ class Merger:
             await self.__task
             self.__task = None
             ray.actor.exit_actor()
+            self.logger.info("Merger closed")

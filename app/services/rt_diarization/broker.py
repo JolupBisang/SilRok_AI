@@ -1,14 +1,9 @@
 import asyncio
-import logging
-from typing import Any, Union
+from typing import Any
 import ray
 from asyncio import Queue
 
-from .dto import (
-    DiarizingASRInput,
-    MergerInput,
-    MergerOutput,
-)
+from .dto import DiarizingASRInput, MergerInput, MergerOutput, RTDiarizationError
 
 
 @ray.remote(num_cpus=1)
@@ -33,7 +28,7 @@ class Broker:
         self,
         consumer_pid_list: list[int],
     ):
-        from core import logging_manager, Config
+        from core import logging_manager
 
         self.__group_to_pid = {}
         self.__pid_to_group = {pid: [] for pid in consumer_pid_list}
@@ -44,9 +39,8 @@ class Broker:
         self.__queue_merger = Queue(maxsize=self.__MAX_QUEUE_SIZE)
         self.__result = Queue(maxsize=self.__MAX_QUEUE_SIZE)
 
-        self.logger = logging_manager.generate(
-            "broker", Config.get_instance().config.server.log_level
-        )
+        self.logger = logging_manager.generate("broker")
+        self.logger.info("Broker service initialized")
 
     def __get_pid_by_group_id(self, group_id: str):
         if group_id in self.__group_to_pid:
@@ -63,7 +57,7 @@ class Broker:
     async def register_diarizing_asr(self, X: DiarizingASRInput):
         await self.__queue_diarizing_asr[self.__get_pid_by_group_id(X.group_id)].put(X)
 
-    async def register_merger(self, X: MergerInput):
+    async def register_merger(self, X: MergerInput | RTDiarizationError):
         await self.__queue_merger.put(X)
 
     # async def complete_diarizing_asr(
@@ -73,13 +67,13 @@ class Broker:
     #     self.__result_queue[self.__get_pid_by_group_id(Y.group_id)].put(Y)
     #     pass
 
-    async def complete_merger(self, Y: MergerOutput):
+    async def complete_merger(self, Y: MergerOutput | RTDiarizationError):
         await self.__result.put(Y)
 
-    async def get_diarizing_asr_task(self, pid: int) -> Union[DiarizingASRInput, Any]:
+    async def get_diarizing_asr_task(self, pid: int) -> DiarizingASRInput | Any:
         return await self.__queue_diarizing_asr[pid].get()
 
-    async def get_merger_task(self) -> Union[tuple[MergerInput], Any]:
+    async def get_merger_task(self) -> tuple[MergerInput] | Any:
         return await self.__queue_merger.get()
 
     async def send_sig_to_diarizing_asr_queue(self, pid: int, sig: Any):
@@ -95,8 +89,9 @@ class Broker:
     async def close(self):
         await asyncio.gather(*asyncio.all_tasks())
         ray.actor.exit_actor()
+        self.logger.info("Broker service closed")
 
-    async def get_result(self):
+    async def get_result(self) -> MergerOutput | RTDiarizationError | Any:
         return await self.__result.get()
 
     async def send_sig_to_result_queue(self, sig: Any):

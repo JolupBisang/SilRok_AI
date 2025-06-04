@@ -1,6 +1,6 @@
 from typing import Callable
 from fastapi import WebSocket
-from dto.response import LLMContextResponse, LLMResponse
+from dto.response import ErrorResponse, LLMContextResponse, LLMResponse
 from services.rt_diarization import RTDiarizationOutput
 from services.llm import LLMInput, LLMOutput, LLMService
 from services.llm.dto.flag import *
@@ -100,27 +100,33 @@ class LLMUC(DiarizationUC):
     def _diarization_sending_process(self, web_socket: WebSocket, sid: str):
         dsp = super()._diarization_sending_process(web_socket, sid)
 
-        async def llm_register(Y: RTDiarizationOutput):
-            if Y.uuid == sid and Y.completed:
+        async def llm_register(Y: RTDiarizationOutput | None, e: Exception | None):
+            if e is not None and Y.uuid == sid and Y.completed:
                 self.__request_update(Y, self.__callbacks[sid])
-            await dsp(Y)
+            await dsp(Y, e)
 
         return llm_register
 
     def _llm_sending_process(self, web_socket: WebSocket, sid: str):
-        async def llm_sending_process(Y: LLMOutput):
+        async def llm_sending_process(Y: LLMOutput | None, e: Exception | None):
             await web_socket.send_bytes(
-                LLMResponse.from_llm_output(Y).to_byte(self._pack_func[sid]["dumps"])
+                LLMResponse.from_llm_output(Y).to_bytes(self._pack_func[sid]["dumps"])
+                if e is None
+                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
             )
 
         return llm_sending_process
 
     def _llm_context_sending_process(self, web_socket: WebSocket, sid: str):
-        async def llm_context_context_sending_process(Y: LLMOutput):
+        async def llm_context_context_sending_process(
+            Y: LLMOutput | None, e: Exception | None
+        ):
             await web_socket.send_bytes(
                 LLMContextResponse.from_llm_output(Y).to_byte(
                     self._pack_func[sid]["dumps"]
                 )
+                if e is None
+                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
             )
 
         return llm_context_context_sending_process

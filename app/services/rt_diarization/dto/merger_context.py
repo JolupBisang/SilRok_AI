@@ -6,18 +6,18 @@ from .speak import Speak
 
 @dataclass(slots=True)
 class MergerContext:
-    uuid: str
-    group_id: str
-    completed: list[Speak] = field(default_factory=list)
-    candidate: list[Speak] = field(default_factory=list)
+    uuid: str = field()
+    group_id: str = field()
+    completed: list[Speak] = field(default_factory=list, repr=False)
+    candidate: list[Speak] = field(default_factory=list, repr=False)
 
-    prev_completed: list[Speak] = field(default_factory=list)
-    prev_candidate: list[Speak] = field(default_factory=list)
+    prev_completed: list[Speak] = field(default_factory=list, repr=False)
+    prev_candidate: list[Speak] = field(default_factory=list, repr=False)
 
-    cached_completed: dict[str, list[Speak]] = field(default_factory=dict)
-    cached_candidate: dict[str, list[Speak]] = field(default_factory=dict)
-    sync_timestamp: dict[str, int] = field(default_factory=dict)
-    speak_order: int = field(default=0)
+    cached_completed: dict[str, list[Speak]] = field(default_factory=dict, repr=False)
+    cached_candidate: dict[str, list[Speak]] = field(default_factory=dict, repr=False)
+    sync_timestamp: dict[str, int] = field(default_factory=dict, repr=False)
+    speak_order: int = field(default=0, repr=False)
 
     def update(self, X: MergerInput):
         if self.group_id != X.group_id:

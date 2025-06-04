@@ -1,7 +1,7 @@
 from typing import Callable
 from fastapi import WebSocket
 
-from dto.response import DiarizationResponse, DiarizationEmbedResponse
+from dto.response import DiarizationResponse, DiarizationEmbedResponse, ErrorResponse
 from services.embed import EmbedInput, EmbedOutput, EmbedService
 from services.rt_diarization import (
     RTDiarizationService,
@@ -102,21 +102,27 @@ class DiarizationUC(ASocketUC):
         return False
 
     def _diarization_sending_process(self, web_socket: WebSocket, sid: str):
-        async def diarization_sending_process(Y: RTDiarizationOutput):
+        async def diarization_sending_process(
+            Y: RTDiarizationOutput | None, e: Exception | None
+        ):
             await web_socket.send_bytes(
-                DiarizationResponse.from_rt_diarization_output(Y).to_byte(
+                DiarizationResponse.from_rt_diarization_output(Y).to_bytes(
                     self._pack_func[sid]["dumps"]
                 )
+                if e is None
+                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
             )
 
         return diarization_sending_process
 
     def _embed_sending_process(self, web_socket: WebSocket, sid: str):
-        async def llm_sending_process(Y: EmbedOutput):
+        async def llm_sending_process(Y: EmbedOutput | None, e: Exception | None):
             await web_socket.send_bytes(
-                DiarizationEmbedResponse.from_embed_output(Y).to_byte(
+                DiarizationEmbedResponse.from_embed_output(Y).to_bytes(
                     self._pack_func[sid]["dumps"]
                 )
+                if e is None
+                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
             )
 
         return llm_sending_process

@@ -1,6 +1,5 @@
 import asyncio
 from collections import defaultdict
-import logging
 import ray
 
 from util import LRUDict
@@ -27,19 +26,19 @@ class LLM:
 
     def init(self):
         from containers import Container
-        from core import logging_manager, Config
+        from core import logging_manager
 
         manager = Container.get_manager()
         manager.init_llm()
 
         self.gemini = manager.container.gemini()
-        self.logger = logging_manager.generate(
-            "llm", Config.get_instance().config.server.log_level
-        )
+        self.logger = logging_manager.generate("llm")
 
         self.__locks = defaultdict(asyncio.Lock)
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
         self.__MAX_CACHE_SIZE = self.__MAX_CACHE_SIZE
+
+        self.logger.info("LLM service initialized")
 
     def __get_context(self, X: LLMInput) -> LLMContext:
         group_id = X.group_id
@@ -52,6 +51,7 @@ class LLM:
     async def request(self, X: LLMInput):
         group_id = X.group_id
         async with self.__locks[group_id]:
+            self.logger.debug(f"Received request: {X}")
             context = self.__get_context(X)
             context.update(X)
 
@@ -73,10 +73,11 @@ class LLM:
                 return LLMOutput.from_context_and_response(X, response.text)
             except Exception as e:
                 self.logger.error(f"LLM processing error: {e}")
-                return LLMOutput(group_id=X.group_id)
+                raise e
 
     async def close(self):
         tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
         ray.actor.exit_actor()
+        self.logger.info("LLM service closed")

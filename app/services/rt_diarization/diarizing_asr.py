@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 import ray
 import asyncio
@@ -7,6 +6,7 @@ import traceback
 from RTWhisper import TokenStreamer
 from RTWhisper.data import Result
 from RTWhisper.data import Sentence
+from services.rt_diarization.dto.rt_diarization_error import RTDiarizationError
 from util import LRUDict
 
 from .broker import Broker
@@ -48,7 +48,7 @@ class DiarizingASR:
         broker: Broker,
     ):
         from containers import Container
-        from core import logging_manager, Config
+        from core import logging_manager
 
         manager = Container.get_manager()
         manager.init_diarization()
@@ -57,9 +57,7 @@ class DiarizingASR:
         self.broker = broker
         self.asr = TokenStreamer.get_instance()
         self.pyannote = manager.container.pyannote()
-        self.logger = logging_manager.generate(
-            "diarizing_asr", Config.get_instance().config.server.log_level
-        )
+        self.logger = logging_manager.generate("diarizing_asr")
         self.__task = None
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
         self.__lock = LRUDict(self.__MAX_STORAGE_SIZE)
@@ -91,19 +89,30 @@ class DiarizingASR:
                 )
                 if X == "END":
                     break
-                self.logger.debug(f"Diarizing ASR X received")
+                self.logger.debug(f"Received Diarizing ASR task: {X}")
 
                 async with self.__get_lock(X):
-                    context = self.__get_context(X)
-                    context.update(X)
-                    merger_X, Y = await self.__service(context)
+                    try:
+                        context = self.__get_context(X)
+                        context.update(X)
+                        merger_X, Y = await self.__service(context)
+                    except Exception as e:
+                        self.logger.error(f"Diarizing ASR service error: {e}")
+                        self.logger.error(traceback.format_exc())
+                        self.broker.complete_merger.remote(
+                            RTDiarizationError(X.uuid, e)
+                        )
+                        # NOTE 삭제해도, 안해도 문제라 일단 안하는 방향으로 한다. 이 의미는 어떤 상황에서 에러가 나면 안된다는 의미다.
+                        # 따라서, 오류 전파를 하지 않는다.
+                        # self.__del_context(X)
+                        continue
 
                 # 임의 로직
                 merger_X.must_return = X.must_return
                 if merger_X.must_return or merger_X.completed or merger_X.candidate:
                     self.broker.register_merger.remote(merger_X)
 
-                self.logger.debug(f"Diarizing ASR processed")
+                self.logger.debug(f"Processed Diarizing ASR task: {Y}")
         except BaseException as e:
             self.logger.error(f"Diarizing ASR consumer error: {e}")
         self.logger.info("Diarizing ASR consumer stopped")
@@ -128,6 +137,12 @@ class DiarizingASR:
 
         return self.__storage[group_id][user_id]
 
+    def __del_context(self, X: DiarizingASRInput):
+        group_id = X.group_id
+        user_id = X.user_id
+        if group_id in self.__storage and user_id in self.__storage[group_id]:
+            del self.__storage[group_id][user_id]
+
     async def __service(self, context: DiarizingASRContext):
         try:
             # self.logger.info("ASR start")
@@ -138,7 +153,6 @@ class DiarizingASR:
             # self.logger.info("Diarization done")
         except Exception as e:
             self.logger.error(f"Diarizing ASR service error: {e}")
-            self.logger.error(traceback.format_exc())
             raise e
 
         merger_X = MergerInput.from_diarizing_asr_context(context)
@@ -151,7 +165,9 @@ class DiarizingASR:
         if len(param.audio) < self.__MIN_AUDIO_DURATION:
             return
 
+        self.logger.debug(f"param.audio {len(param.audio)}")
         result: Result = self.asr.process(param)
+        self.logger.debug(f"ASR vad chunk size: {len(result.prev_processed_audio)}")
 
         param.update(result)
         context.asr_completed = result.completed

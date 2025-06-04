@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .merger_context import MergerContext
 from .speak import Speak
@@ -6,10 +6,10 @@ from .speak import Speak
 
 @dataclass(slots=True)
 class MergerOutput:
-    uuid: str
-    group_id: str
-    completed: list[Speak]
-    candidate: list[Speak]
+    uuid: str = field()
+    group_id: str = field()
+    completed: list[Speak] = field()
+    candidate: list[Speak] = field()
 
     @staticmethod
     def __is_same_current_with_prev(

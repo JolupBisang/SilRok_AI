@@ -30,22 +30,25 @@ class LLMService(AsyncResource):
         self.llm: LLM = LLM.remote(MAX_STORAGE_SIZE, MAX_CACHE_SIZE)
         await self.llm.init.remote()
 
+        self.logger.info("LLM service initialized")
         return self
 
     # override
     async def shutdown(self, _: "LLMService") -> None:
         await self.llm.close.remote()
+        self.logger.info("LLM service closed")
 
     def request_with_callback(
-        self, X: LLMInput, callback: Callable[[LLMOutput], None]
+        self,
+        X: LLMInput,
+        callback: Callable[[LLMOutput | None, Exception | None], None],
     ) -> None:
         async def _run() -> None:
             try:
-                result = await self.request(X)
-                if result is not None:
-                    await callback(result)
+                return await callback(await self.request(X), None)
             except Exception as e:
                 self.logger.error(f"Error in callback: {e}")
+                return await callback(None, e)
 
         asyncio.create_task(_run())
 

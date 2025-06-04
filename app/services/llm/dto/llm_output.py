@@ -7,7 +7,7 @@ from .llm_context import LLMContext
 
 @dataclass(slots=True)
 class LLMOutput:
-    group_id: str
+    group_id: str = field()
     context: str = field(default="")
     agenda: list[str] = field(default_factory=list)
     feedback: list[dict[str, str]] = field(default_factory=list)

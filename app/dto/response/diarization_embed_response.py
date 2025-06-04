@@ -13,7 +13,7 @@ class DiarizationEmbedResponse(BaseModel):
     # NOTE front 요청으로 임의 설정
     flag: str = "embedded"
 
-    def to_byte(self, dump_func: Callable[[Any], bytes]):
+    def to_bytes(self, dump_func: Callable[[Any], bytes]):
         bt = dump_func(self.model_dump(exclude={"embedding"}))
         return len(bt).to_bytes(4, "big") + bt + self.embedding
 

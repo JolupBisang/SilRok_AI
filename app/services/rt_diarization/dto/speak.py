@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from rapidfuzz.distance import Levenshtein
 
 from RTWhisper.data import Sentence
@@ -6,10 +6,10 @@ from RTWhisper.data import Sentence
 
 @dataclass(slots=True)
 class Speak:
-    similarity: float
-    user_id: str
-    audio_id: str
-    sentence: Sentence
+    similarity: float = field()
+    user_id: str = field()
+    audio_id: str = field()
+    sentence: Sentence = field()
 
     def to_dict(self):
         return {
