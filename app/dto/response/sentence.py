@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from RTWhisper.data import Sentence as WhisperSentence
+from rt_whisper.data import Sentence as WhisperSentence
 from services.rt_diarization import Speak
 from .word import Word
 

@@ -69,7 +69,7 @@ def setup_main_logging():
 def generate(name: str, level: int = DEFAULT_LOG_LEVEL):
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    # logger.propagate = False
+    logger.propagate = False
 
     if not any(isinstance(h, RichHandler) for h in logger.handlers):
         logger.addHandler(RichHandler())
@@ -81,7 +81,10 @@ def generate(name: str, level: int = DEFAULT_LOG_LEVEL):
         for h in logger.handlers
     ):
         file_handler = logging.FileHandler(log_path, encoding="utf-8")
-        file_handler.setLevel(FILE_LOG_LEVEL)
         logger.addHandler(file_handler)
+
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            handler.setLevel(FILE_LOG_LEVEL)
 
     return logger

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from rapidfuzz.distance import Levenshtein
 
-from RTWhisper.data import Sentence
+from rt_whisper.data import Sentence
 
 
 @dataclass(slots=True)

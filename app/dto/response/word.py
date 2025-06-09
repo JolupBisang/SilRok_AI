@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from RTWhisper.data import Token
+from rt_whisper.data import Token
 
 
 class Word(BaseModel):
