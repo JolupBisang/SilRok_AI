@@ -33,7 +33,7 @@ class LLMOutput:
         for name, comment in feedback_matches:
             feedback.append(
                 {
-                    "name": name.strip(),
+                    "user_id": name.strip(),
                     "comment": comment.strip(),
                 }
             )

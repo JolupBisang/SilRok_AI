@@ -3,9 +3,9 @@ import ray
 import asyncio
 import traceback
 
-from RTWhisper import TokenStreamer
-from RTWhisper.data import Result
-from RTWhisper.data import Sentence
+from rt_whisper.streamers import get_token_streamer
+from rt_whisper.data import Result, Sentence
+
 from services.rt_diarization.dto.rt_diarization_error import RTDiarizationError
 from util import LRUDict
 
@@ -55,7 +55,7 @@ class DiarizingASR:
 
         self.__PID = pid
         self.broker = broker
-        self.asr = TokenStreamer.get_instance()
+        self.asr = get_token_streamer()
         self.pyannote = manager.container.pyannote()
         self.logger = logging_manager.generate("diarizing_asr")
         self.__task = None
@@ -164,12 +164,12 @@ class DiarizingASR:
 
     def __asr(self, context: DiarizingASRContext):
         param = context.param
-        if len(param.audio) < self.__MIN_AUDIO_DURATION:
+        if len(param.chunk) < self.__MIN_AUDIO_DURATION:
             return
 
-        self.logger.debug(f"param.audio {len(param.audio)}")
+        self.logger.debug(f"param.audio {len(param.chunk)}")
         result: Result = self.asr.process(param)
-        self.logger.debug(f"ASR vad chunk size: {len(result.prev_processed_audio)}")
+        self.logger.debug(f"ASR vad chunk size: {len(result.recycle_chunk)}")
 
         param.update(result)
         context.asr_completed = result.completed

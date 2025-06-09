@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from RTWhisper.data import Param, Sentence
+from rt_whisper.data import Param, Sentence
 
 from .diarizing_asr_input import DiarizingASRInput
 from .fixed_buffer_clustering import FixedBufferClustering
@@ -24,14 +24,16 @@ class DiarizingASRContext:
     clustering: FixedBufferClustering = field(
         default_factory=lambda: FixedBufferClustering({}), repr=False
     )
-    audio: np.ndarray = field(default_factory=lambda: np.zeros((0,), dtype=np.float32), repr=False)
+    audio: np.ndarray = field(
+        default_factory=lambda: np.zeros((0,), dtype=np.float32), repr=False
+    )
     offset: int = field(default=0, repr=False)
 
     diarization_completed: list[Speak] = field(default_factory=list, repr=False)
     diarization_candidate: list[Speak] = field(default_factory=list, repr=False)
 
     def __asr_update(self, audio: np.ndarray, prompt: str = None, language: str = None):
-        self.param.audio = np.concatenate([self.param.audio, audio])
+        self.param.chunk = np.concatenate([self.param.chunk, audio])
         self.param.prompt = prompt
         self.param.language = language
         self.asr_completed = []
@@ -53,20 +55,16 @@ class DiarizingASRContext:
             raise ValueError("user_id mismatch")
 
         if X.sc_offset is not None:
-            self.__clear_prev_data()
-            self.param.sc_offset = X.sc_offset
+            self.__init__(
+                uuid=self.uuid,
+                user_id=self.user_id,
+                group_id=self.group_id,
+                clustering=self.clustering,
+            )
+            self.param.offset = X.sc_offset
             self.offset = X.sc_offset
         self.__asr_update(X.audio, X.prompt, X.language)
         self.__diarization_update(X.audio, X.refer_dict)
-
-    def __clear_prev_data(self):
-        self.param = Param()
-        self.asr_completed = []
-        self.asr_candidate = []
-        self.audio = np.zeros((0,), dtype=np.float32)
-        self.offset = 0
-        self.diarization_completed = []
-        self.diarization_candidate = []
 
     @staticmethod
     def from_diarizing_asr_input(X: DiarizingASRInput):
@@ -78,7 +76,7 @@ class DiarizingASRContext:
         )
 
         if X.sc_offset is not None:
-            context.param.sc_offset = X.sc_offset
+            context.param.offset = X.sc_offset
             context.offset = X.sc_offset
 
         return context
