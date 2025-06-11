@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import json
 from logging import Logger
 import uuid
-
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 import msgpack

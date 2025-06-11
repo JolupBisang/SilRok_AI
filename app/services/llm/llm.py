@@ -36,7 +36,6 @@ class LLM:
 
         self.__locks = defaultdict(asyncio.Lock)
         self.__storage = LRUDict(self.__MAX_STORAGE_SIZE)
-        self.__MAX_CACHE_SIZE = self.__MAX_CACHE_SIZE
 
         self.logger.info("LLM service initialized")
 

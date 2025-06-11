@@ -6,7 +6,6 @@ import traceback
 from rt_whisper.streamers import get_token_streamer
 from rt_whisper.data import Result, Sentence
 
-from services.rt_diarization.dto.rt_diarization_error import RTDiarizationError
 from util import LRUDict
 
 from .broker import Broker
@@ -16,6 +15,7 @@ from .dto import (
     DiarizingASRInput,
     DiarizingASROutput,
     Speak,
+    RTDiarizationError
 )
 
 MIN_DURATION = 8000
