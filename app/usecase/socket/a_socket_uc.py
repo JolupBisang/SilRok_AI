@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import json
 from logging import Logger
 import uuid
-
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 import msgpack
@@ -47,9 +46,11 @@ class ASocketUC(ABC):
                 await self._run(web_socket, sid, metadata)
             except Exception as e:
                 self.logger.error(f"WebSocket error: {e}")
-                await web_socket.send_bytes(
-                    ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
-                )
+                if web_socket.client_state == WebSocketState.DISCONNECTED:
+                    return
+                # await web_socket.send_bytes(
+                #     ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
+                # )
 
     async def disconnect(self, web_socket: WebSocket, sid: str):
         self.__remaining_connections += 1
@@ -77,7 +78,9 @@ class ASocketUC(ABC):
             dumps, loads = self.__get_dump_func_and_load_func(type_)
             self._pack_func[sid] = {"dumps": dumps, "loads": loads}
             await self._transceive(web_socket, sid)
-
+            await self.disconnect(
+                web_socket, sid
+            )  # 이유는 모르지만, disconnect 오류가 났는데도 진행되서 넣어둠
         except WebSocketDisconnect:
             return await self.disconnect(web_socket, sid)
         except BaseException as e:

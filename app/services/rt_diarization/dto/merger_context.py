@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from .merger_input import MergerInput
 from .speak import Speak
 
+MIN_WAITED_TIME = 16000 * 5
+
 
 @dataclass(slots=True)
 class MergerContext:
@@ -43,15 +45,36 @@ class MergerContext:
         self.cached_candidate[X.user_id] = X.candidate
 
         base_time = min(self.sync_timestamp.values())
+        recent_time = max(self.sync_timestamp.values())
 
-        all_completed = [s for speaks in self.cached_completed.values() for s in speaks]
-        all_candidate = [s for speaks in self.cached_candidate.values() for s in speaks]
+        # 오랫동안 인식된 말이 없는 사용자 제거
+        if recent_time - base_time < MIN_WAITED_TIME:
+            anchor = recent_time - MIN_WAITED_TIME
+            for user_id in self.sync_timestamp.keys():
+                if self.sync_timestamp[user_id] < anchor:
+                    del self.sync_timestamp[user_id]
+                    self.cached_completed[user_id] += self.cached_candidate[user_id]
+                    # del 해도 되는데, self.cached_completed의 키와 일관성 가지기 위해
+                    self.cached_candidate[user_id] = []
+            base_time = min(self.sync_timestamp.values())
 
-        new_completed = [
-            c for c in all_completed if c.sentence.tokens[-1].end <= base_time
+        new_completed = []
+        new_candidate = []
+
+        for user_id in self.cached_completed.keys():
+            co, ca = [], []
+            for speak in self.cached_completed[user_id]:
+                if speak.sentence.tokens[-1].end <= base_time:
+                    co.append(speak)
+                else:
+                    ca.append(speak)
+            new_completed += co
+            new_candidate += ca
+            self.cached_completed[user_id] = ca
+
+        new_candidate += [
+            s for speaks in self.cached_candidate.values() for s in speaks
         ]
-        new_candidate = [c for c in all_completed if c not in new_completed]
-        new_candidate += all_candidate
 
         new_completed.sort(key=lambda x: x.sentence.tokens[0].start)
         new_candidate.sort(key=lambda x: x.sentence.tokens[0].start)

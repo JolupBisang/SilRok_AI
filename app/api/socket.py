@@ -20,7 +20,7 @@ async def websocket(
 
 @router.websocket("/ws/{type_}")
 @inject
-async def socket(
+async def websocket_type(
     websocket: WebSocket,
     type_: str,
     socket_uc: SocketUC = Depends(Provide[Container.socket_uc]),

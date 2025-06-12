@@ -1,5 +1,6 @@
 from typing import Callable
 from fastapi import WebSocket
+from fastapi.websockets import WebSocketState
 
 from dto.response import DiarizationResponse, DiarizationEmbedResponse, ErrorResponse
 from services.embed import EmbedInput, EmbedOutput, EmbedService
@@ -11,7 +12,7 @@ from services.rt_diarization import (
 from util import LRUDict
 
 from .a_socket_uc import ASocketUC
-from .dto import DiarizeMetadata, Metadata
+from .dto import DiarizationMetadata, Metadata
 from .dto.flag import *
 
 
@@ -45,7 +46,7 @@ class DiarizationUC(ASocketUC):
         self.__SAMPLE_RATE = SAMPLE_RATE
         self.__MAX_BUFFER_SIZE = MAX_BUFFER_SIZE
 
-    def _storage_init(self, sid: str, metadata: DiarizeMetadata):
+    def _storage_init(self, sid: str, metadata: DiarizationMetadata):
         # FIXME this storage is not memory safe.
         self.__storage[sid][metadata.group_id] = {
             "refer": {},
@@ -58,31 +59,31 @@ class DiarizationUC(ASocketUC):
         if flag not in DIARIZE_FLAGS:
             return False
 
-        diarize_metadata = DiarizeMetadata.from_metadata(metadata)
+        diarization_metadata = DiarizationMetadata.from_metadata(metadata)
 
         if flag == DIARIZATION_EMBED:
             self.embed_service.request_with_callback(
                 EmbedInput(
-                    user_id=diarize_metadata.user_id,
-                    audio=diarize_metadata.audio,
+                    user_id=diarization_metadata.user_id,
+                    audio=diarization_metadata.audio,
                     sample_rate=self.__SAMPLE_RATE,
                 ),
                 self.__callbacks[sid],
             )
             return True
         else:
-            group_id = diarize_metadata.group_id
+            group_id = diarization_metadata.group_id
             storage = self.__storage[sid]
             if group_id not in storage:
-                self._storage_init(sid, diarize_metadata)
+                self._storage_init(sid, diarization_metadata)
 
             if flag == DIARIZATION_REFER:
-                storage[group_id]["refer"] = diarize_metadata.refer()
+                storage[group_id]["refer"] = diarization_metadata.refer()
                 storage[group_id]["users"].clear()
                 self.logger.debug(f"diarization register refer")
                 return True
             elif flag == DIARIZATION:
-                user_id = diarize_metadata.user_id
+                user_id = diarization_metadata.user_id
                 refer = {}
                 if user_id not in storage[group_id]["users"]:
                     refer = storage[group_id]["refer"]
@@ -90,11 +91,11 @@ class DiarizationUC(ASocketUC):
                 await self.rt_diarization_service.request(
                     RTDiarizationInput(
                         uuid=sid,
-                        audio=diarize_metadata.audio,
-                        group_id=diarize_metadata.group_id,
-                        user_id=diarize_metadata.user_id,
+                        audio=diarization_metadata.audio,
+                        group_id=diarization_metadata.group_id,
+                        user_id=diarization_metadata.user_id,
                         refer_dict=refer,
-                        sc_offset=diarize_metadata.sc_offset,
+                        sc_offset=diarization_metadata.sc_offset,
                     )
                 )
                 self.logger.debug(f"diarization service")
@@ -105,25 +106,50 @@ class DiarizationUC(ASocketUC):
         async def diarization_sending_process(
             Y: RTDiarizationOutput | None, e: Exception | None
         ):
-            await web_socket.send_bytes(
-                DiarizationResponse.from_rt_diarization_output(Y).to_bytes(
-                    self._pack_func[sid]["dumps"]
+            if web_socket.client_state != WebSocketState.CONNECTED:
+                self.logger.debug(
+                    f"WebSocket {sid} is not connected, skipping sending response."
                 )
-                if e is None
-                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
-            )
+                return
+            if Y is not None:
+                self.logger.info(
+                    f"completed: {[(speak.sentence.order, speak.sentence.text) for speak in Y.completed]}\n-candidate: {[(speak.sentence.order, speak.sentence.text) for speak in Y.candidate]}"
+                )
+                await web_socket.send_bytes(
+                    DiarizationResponse.from_rt_diarization_output(Y).to_bytes(
+                        self._pack_func[sid]["dumps"]
+                    )
+                )
+            # await web_socket.send_bytes(
+            #     DiarizationResponse.from_rt_diarization_output(Y).to_bytes(
+            #         self._pack_func[sid]["dumps"]
+            #     )
+            #     if e is None
+            #     else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
+            # )
 
         return diarization_sending_process
 
     def _embed_sending_process(self, web_socket: WebSocket, sid: str):
         async def llm_sending_process(Y: EmbedOutput | None, e: Exception | None):
-            await web_socket.send_bytes(
-                DiarizationEmbedResponse.from_embed_output(Y).to_bytes(
-                    self._pack_func[sid]["dumps"]
+            if web_socket.client_state != WebSocketState.CONNECTED:
+                self.logger.debug(
+                    f"WebSocket {sid} is not connected, skipping sending response."
                 )
-                if e is None
-                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
-            )
+                return
+            if Y is not None:
+                await web_socket.send_bytes(
+                    DiarizationEmbedResponse.from_embed_output(Y).to_bytes(
+                        self._pack_func[sid]["dumps"]
+                    )
+                )
+            # await web_socket.send_bytes(
+            #     DiarizationEmbedResponse.from_embed_output(Y).to_bytes(
+            #         self._pack_func[sid]["dumps"]
+            #     )
+            #     if e is None
+            #     else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
+            # )
 
         return llm_sending_process
 

@@ -1,10 +1,9 @@
-from abc import ABC
 import inspect
 from dependency_injector.containers import DeclarativeContainer
 from dependency_injector import providers
 
 
-class ContainerManager(ABC):
+class ContainerManager:
     def __init__(self, container: DeclarativeContainer) -> None:
         self.container: DeclarativeContainer = container
 

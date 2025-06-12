@@ -6,7 +6,6 @@ import traceback
 from rt_whisper.streamers import get_token_streamer
 from rt_whisper.data import Result, Sentence
 
-from services.rt_diarization.dto.rt_diarization_error import RTDiarizationError
 from util import LRUDict
 
 from .broker import Broker
@@ -16,6 +15,7 @@ from .dto import (
     DiarizingASRInput,
     DiarizingASROutput,
     Speak,
+    RTDiarizationError,
 )
 
 MIN_DURATION = 8000
@@ -155,6 +155,7 @@ class DiarizingASR:
             # self.logger.info("Diarization done")
         except Exception as e:
             self.logger.error(f"processing ASR service error: {e}")
+            print(context.offset)
             raise e
 
         merger_X = MergerInput.from_diarizing_asr_context(context)
@@ -189,18 +190,30 @@ class DiarizingASR:
             last_end_time = offset
             result = []
             for sentence in ary:
-                start, end = self.__adjust_ts(
-                    sentence.tokens[0].start,
-                    sentence.tokens[-1].end,
-                    offset,
-                    len(audio),
-                )
+                try:
+                    start, end = self.__adjust_ts(
+                        sentence.tokens[0].start,
+                        sentence.tokens[-1].end,
+                        offset,
+                        len(audio),
+                    )
+                except Exception as e:
+                    print(f"Error adjusting timestamps: {e}")
+                    print(sentence)
+                    raise e
+
                 last_end_time = sentence.tokens[-1].end
                 if start == -1 or end == -1:
                     continue
-                predict_id, similarity = func(
-                    await self.__get_embedding(audio[start:end])
-                )
+                try:
+                    predict_id, similarity = func(
+                        await self.__get_embedding(audio[start:end])
+                    )
+                except Exception as e:
+                    self.logger.error(f"Diarization error: {e}")
+                    self.logger.error(f"{len(audio), start, end, len(audio[start:end])}")
+                    raise e
+
                 result.append(
                     Speak(
                         similarity=float(similarity),

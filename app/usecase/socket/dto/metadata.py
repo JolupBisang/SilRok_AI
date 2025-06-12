@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Callable
 
 from .flag import *
 
@@ -19,7 +20,7 @@ class Metadata:
         return self.header["group_id"]
 
     @staticmethod
-    def from_bytes(data: bytes, loads: callable):
+    def from_bytes(data: bytes, loads: Callable[[bytes], dict]):
         header, payload = Metadata.byte_to_dict(data, loads)
 
         if header["flag"] not in FLAGS:
@@ -31,6 +32,6 @@ class Metadata:
         )
 
     @staticmethod
-    def byte_to_dict(data: bytes, loads: callable):
+    def byte_to_dict(data: bytes, loads: Callable[[bytes], dict]):
         end = 4 + int.from_bytes(data[0:4], byteorder="big")
         return loads(data[4:end]), data[end:]

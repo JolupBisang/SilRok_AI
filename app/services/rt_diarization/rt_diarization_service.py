@@ -52,7 +52,9 @@ class RTDiarizationService(AsyncResource):
             DiarizingASR.remote(MAX_STORAGE_SIZE, MIN_AUDIO_DURATION, SAMPLE_RATE)
             for _ in range(NUM_CONSUMERS)
         ]
-        self.__callbacks: dict[str:callable] = {}
+        self.__callbacks: dict[str:Callable[
+            [DiarizingASROutput | MergerOutput | None], Exception | None
+        ]] = {}
         self.__task: asyncio.Future = None
         self.__lock = asyncio.Lock()
 

@@ -15,7 +15,7 @@ EMBEDDING_LENGTH = 512 * 4  # 4 bytes for float32
 
 
 @dataclass
-class DiarizeMetadata:
+class DiarizationMetadata:
     metadata: Metadata
 
     @property
@@ -80,6 +80,6 @@ class DiarizeMetadata:
 
     @staticmethod
     def from_metadata(metadata: Metadata):
-        return DiarizeMetadata(
+        return DiarizationMetadata(
             metadata=metadata,
         )
