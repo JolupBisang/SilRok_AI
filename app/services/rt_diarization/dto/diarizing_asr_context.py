@@ -22,7 +22,7 @@ class DiarizingASRContext:
 
     # diarization param
     clustering: FixedBufferClustering = field(
-        default_factory=lambda: FixedBufferClustering({}), repr=False
+        default_factory=lambda: FixedBufferClustering({}, ""), repr=False
     )
     audio: np.ndarray = field(
         default_factory=lambda: np.zeros((0,), dtype=np.float32), repr=False
@@ -45,7 +45,7 @@ class DiarizingASRContext:
         self.diarization_candidate = []
 
         if refer:
-            self.clustering = FixedBufferClustering(refer)
+            self.clustering = FixedBufferClustering(refer, self.user_id)
 
     def update(self, X: DiarizingASRInput):
         self.uuid = X.uuid
@@ -72,7 +72,7 @@ class DiarizingASRContext:
             uuid=X.uuid,
             group_id=X.group_id,
             user_id=X.user_id,
-            clustering=FixedBufferClustering(X.refer_dict),
+            clustering=FixedBufferClustering(X.refer_dict, X.user_id),
         )
 
         if X.sc_offset is not None:
