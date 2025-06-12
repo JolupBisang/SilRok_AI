@@ -19,6 +19,7 @@ service:
         max_queue_size: 100
         max_storage_size: 1000
         min_audio_duration: 48000
+        same_user_weight: 0.2
     socket:
         max_connections: 5
         max_buffer_size: 20
