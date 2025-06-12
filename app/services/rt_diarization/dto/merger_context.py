@@ -48,9 +48,10 @@ class MergerContext:
         recent_time = max(self.sync_timestamp.values())
 
         # 오랫동안 인식된 말이 없는 사용자 제거
-        if recent_time - base_time < MIN_WAITED_TIME:
+        if recent_time - base_time > MIN_WAITED_TIME:
             anchor = recent_time - MIN_WAITED_TIME
-            for user_id in self.sync_timestamp.keys():
+            keys = list(self.sync_timestamp.keys())
+            for user_id in keys:
                 if self.sync_timestamp[user_id] < anchor:
                     del self.sync_timestamp[user_id]
                     self.cached_completed[user_id] += self.cached_candidate[user_id]
