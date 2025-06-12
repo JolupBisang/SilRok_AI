@@ -1,5 +1,6 @@
 from typing import Callable
 from fastapi import WebSocket
+from fastapi.websockets import WebSocketState
 
 from dto.response import ErrorResponse, LLMContextResponse, LLMResponse
 from services.rt_diarization import RTDiarizationOutput
@@ -112,11 +113,22 @@ class LLMUC(DiarizationUC):
 
     def _llm_sending_process(self, web_socket: WebSocket, sid: str):
         async def llm_sending_process(Y: LLMOutput | None, e: Exception | None):
-            await web_socket.send_bytes(
-                LLMResponse.from_llm_output(Y).to_bytes(self._pack_func[sid]["dumps"])
-                if e is None
-                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
-            )
+            if web_socket.client_state != WebSocketState.CONNECTED:
+                self.logger.debug(
+                    f"WebSocket {sid} is not connected, skipping sending response."
+                )
+                return
+            if Y is not None:
+                await web_socket.send_bytes(
+                    LLMResponse.from_llm_output(Y).to_bytes(
+                        self._pack_func[sid]["dumps"]
+                    )
+                )
+            # await web_socket.send_bytes(
+            #     LLMResponse.from_llm_output(Y).to_bytes(self._pack_func[sid]["dumps"])
+            #     if e is None
+            #     else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
+            # )
 
         return llm_sending_process
 
@@ -124,13 +136,24 @@ class LLMUC(DiarizationUC):
         async def llm_context_context_sending_process(
             Y: LLMOutput | None, e: Exception | None
         ):
-            await web_socket.send_bytes(
-                LLMContextResponse.from_llm_output(Y).to_byte(
-                    self._pack_func[sid]["dumps"]
+            if web_socket.client_state != WebSocketState.CONNECTED:
+                self.logger.debug(
+                    f"WebSocket {sid} is not connected, skipping sending response."
                 )
-                if e is None
-                else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
-            )
+                return
+            if Y is not None:
+                await web_socket.send_bytes(
+                    LLMContextResponse.from_llm_output(Y).to_byte(
+                        self._pack_func[sid]["dumps"]
+                    )
+                )
+            # await web_socket.send_bytes(
+            #     LLMContextResponse.from_llm_output(Y).to_byte(
+            #         self._pack_func[sid]["dumps"]
+            #     )
+            #     if e is None
+            #     else ErrorResponse(error=str(e)).to_bytes(self._pack_func[sid]["dumps"])
+            # )
 
         return llm_context_context_sending_process
 
