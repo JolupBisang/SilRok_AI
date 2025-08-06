@@ -82,7 +82,17 @@ class Merger:
             return []
 
         speaks_groups = [[speaks[0]]]
-        cnt_idx = 0
+        cnt_idx = 1
+        while cnt_idx < len(speaks):
+            speak = speaks[cnt_idx]
+            while cnt_idx < len(speaks) and self.__speak_iou(speak, speaks[cnt_idx]) > 0.5:
+                speaks_groups[-1].append(speaks[cnt_idx])
+                cnt_idx += 1
+            if cnt_idx < len(speaks):
+                speaks_groups.append([speaks[cnt_idx]])
+                cnt_idx += 1
+        
+
         for speak in speaks[1:]:
             similarities = []
             for i in range(
@@ -97,6 +107,19 @@ class Merger:
                 speaks_groups[max_arg].append(speak)
 
         return [max(sg, key=lambda x: x.similarity) for sg in speaks_groups]
+
+    def __speak_iou(
+        self, A: Speak, B: Speak, padding: int = 3200, smooth: float = 1e-6
+    ) -> float:
+        a1 = max(0, A.sentence.tokens[0].start - padding)
+        b1 = A.sentence.tokens[-1].end + padding
+        a2 = max(0, B.sentence.tokens[0].start - padding)
+        b2 = B.sentence.tokens[-1].end + padding
+
+        inner = max(0, min(b1, b2) - max(a1, a2))
+        outer = max(max(b1, b2) - min(a1, a2), smooth)
+
+        return inner / outer
 
     async def close(self):
         if self.__task is not None:
