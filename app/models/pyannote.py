@@ -1,7 +1,8 @@
 import asyncio
-from pyannote.audio import Inference
 import torch
 import numpy as np
+
+from pyannote.audio import Inference
 
 
 class Pyannote:

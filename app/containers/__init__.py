@@ -1,6 +1,6 @@
 # containers/__init__.py
 
-from .container import Container
-from .container_manager import ContainerManager
+from containers.container import Container
+from containers.container_manager import ContainerManager
 
 __all__ = ["Container", "ContainerManager"]

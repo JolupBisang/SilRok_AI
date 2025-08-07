@@ -28,3 +28,5 @@ async def websocket_type(
     if type_ not in TYPES:
         type_ = MSGPACK
     await socket_uc.add(websocket, type_)
+
+__all__ = ["router"]

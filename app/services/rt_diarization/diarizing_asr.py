@@ -8,8 +8,8 @@ from rt_whisper.data import Result, Sentence
 
 from util import LRUDict
 
-from .broker import Broker
-from .dto import (
+from services.rt_diarization.broker import Broker
+from services.rt_diarization.dto import (
     MergerInput,
     DiarizingASRContext,
     DiarizingASRInput,
@@ -211,7 +211,9 @@ class DiarizingASR:
                     )
                 except Exception as e:
                     self.logger.error(f"Diarization error: {e}")
-                    self.logger.error(f"{len(audio), start, end, len(audio[start:end])}")
+                    self.logger.error(
+                        f"{len(audio), start, end, len(audio[start:end])}"
+                    )
                     raise e
 
                 result.append(
@@ -251,3 +253,6 @@ class DiarizingASR:
                 if duration < MIN_DURATION:
                     return -1, -1
         return start, end
+
+
+__all__ = ["DiarizingASR"]

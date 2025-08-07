@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
-
 import numpy as np
+
+from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
@@ -16,3 +16,6 @@ class DiarizingASRInput:
 
     # 임의 변수
     must_return: bool = field(default=False, repr=False)
+
+
+__all__ = ["DiarizingASRInput"]

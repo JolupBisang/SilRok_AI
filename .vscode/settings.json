@@ -4,7 +4,20 @@
     "editor.wrappingIndent": "indent",
     "jupyter.notebookFileRoot": "/workspaces/dev",
     "python.envFile": "${workspaceFolder}/.env",
-    "python.analysis.exclude": ["**/__pycache__", "**/.git"],
+    "python.analysis.exclude": [
+        "**/__pycache__",
+        "**/.git",
+        ".devcontainer",
+        ".vscode",
+        ".github",
+        ".idea",
+        ".server",
+        ".model",
+        "docs",
+        "logs",
+        "nginx",
+        "out"
+    ],
     "files.watcherExclude": {
         "**/.git/objects/**": true,
         "**/.git/subtree-cache/**": true,
@@ -30,12 +43,13 @@
         "usecase"
     ],
     // Editor
-    "editor.fontFamily": "IBM Plex Sans KR, IBM Plex Mono",
+    "editor.fontFamily": "JetBrains Mono, D2Coding",
     "editor.fontLigatures": true,
     "editor.fontSize": 18,
-    "editor.letterSpacing": 2,
+    "editor.letterSpacing": 0,
     "editor.detectIndentation": false,
     "editor.trimAutoWhitespace": true,
+    "terminal.integrated.fontFamily": "JetBrains Mono, D2Coding",
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "files.eol": "\n",

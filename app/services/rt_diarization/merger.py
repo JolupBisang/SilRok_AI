@@ -3,8 +3,8 @@ import ray
 
 from util import LRUDict
 
-from .broker import Broker
-from .dto import MergerContext, MergerInput, MergerOutput, Speak
+from services.rt_diarization.broker import Broker
+from services.rt_diarization.dto import MergerContext, MergerInput, MergerOutput, Speak
 
 
 @ray.remote(num_cpus=1)
@@ -83,6 +83,17 @@ class Merger:
 
         speaks_groups = [[speaks[0]]]
         cnt_idx = 0
+        # while cnt_idx < len(speaks):
+        #     speak = speaks[cnt_idx]
+        #     while (
+        #         cnt_idx < len(speaks) and self.__speak_iou(speak, speaks[cnt_idx]) > 0.5
+        #     ):
+        #         speaks_groups[-1].append(speaks[cnt_idx])
+        #         cnt_idx += 1
+        #     if cnt_idx < len(speaks):
+        #         speaks_groups.append([speaks[cnt_idx]])
+        #         cnt_idx += 1
+
         for speak in speaks[1:]:
             similarities = []
             for i in range(
@@ -98,6 +109,19 @@ class Merger:
 
         return [max(sg, key=lambda x: x.similarity) for sg in speaks_groups]
 
+    def __speak_iou(
+        self, A: Speak, B: Speak, padding: int = 3200, smooth: float = 1e-6
+    ) -> float:
+        a1 = max(0, A.sentence.tokens[0].start - padding)
+        b1 = A.sentence.tokens[-1].end + padding
+        a2 = max(0, B.sentence.tokens[0].start - padding)
+        b2 = B.sentence.tokens[-1].end + padding
+
+        inner = max(0, min(b1, b2) - max(a1, a2))
+        outer = max(max(b1, b2) - min(a1, a2), smooth)
+
+        return inner / outer
+
     async def close(self):
         if self.__task is not None:
             self.broker.send_sig_to_merger_queue.remote("END")
@@ -105,3 +129,6 @@ class Merger:
             self.__task = None
             ray.actor.exit_actor()
             self.logger.info("Merger closed")
+
+
+__all__ = ["Merger"]

@@ -73,3 +73,5 @@ async def diarize_file(
     diarization_uc: DiarizationUC = Depends(Provide[Container.diarization_uc]),
 ):
     return await diarization_uc.diarize(diarization_request)
+
+__all__ = ["router"]

@@ -37,3 +37,5 @@ async def context_done(
     llm_uc: LLMUC = Depends(Provide[Container.llm_uc]),
 ):
     return await llm_uc.context_done(llm_context_request)
+
+__all__ = ["router"]

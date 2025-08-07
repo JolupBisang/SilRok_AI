@@ -1,4 +1,5 @@
 import numpy as np
+
 from scipy.spatial.distance import cosine
 
 
@@ -36,4 +37,6 @@ class Cluster:
     @property
     def centroid(self):
         return self.__centroid
+
+__all__ = ["Cluster"]
 

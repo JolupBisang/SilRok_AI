@@ -2,7 +2,7 @@ import re
 
 from dataclasses import dataclass, field
 
-from .llm_context import LLMContext
+from services.llm.dto.llm_context import LLMContext
 
 
 @dataclass(slots=True)
@@ -51,3 +51,5 @@ class LLMOutput:
             agenda=agenda,
             feedback=feedback,
         )
+
+__all__ = ["LLMOutput"]

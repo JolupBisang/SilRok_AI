@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
-from .merger_input import MergerInput
-from .speak import Speak
+from services.rt_diarization.dto.merger_input import MergerInput
+from services.rt_diarization.dto.speak import Speak
 
 MIN_WAITED_TIME = 16000 * 5
 
@@ -103,3 +103,6 @@ class MergerContext:
             uuid=X.uuid,
             group_id=X.group_id,
         )
+
+
+__all__ = ["MergerContext"]

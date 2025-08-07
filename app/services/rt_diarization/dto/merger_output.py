@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
-from .merger_context import MergerContext
-from .speak import Speak
+from services.rt_diarization.dto.merger_context import MergerContext
+from services.rt_diarization.dto.speak import Speak
 
 
 @dataclass(slots=True)
@@ -54,3 +54,5 @@ class MergerOutput:
             completed=context.completed,
             candidate=context.candidate,
         )
+
+__all__ = ["MergerOutput"]

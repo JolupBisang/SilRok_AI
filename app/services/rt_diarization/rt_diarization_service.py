@@ -4,10 +4,15 @@ import ray
 import asyncio
 from dependency_injector.resources import AsyncResource
 
-from .diarizing_asr import DiarizingASR
-from .broker import Broker
-from .merger import Merger
-from .dto import DiarizingASRInput, MergerOutput, DiarizingASROutput, RTDiarizationError
+from services.rt_diarization.diarizing_asr import DiarizingASR
+from services.rt_diarization.broker import Broker
+from services.rt_diarization.merger import Merger
+from services.rt_diarization.dto import (
+    DiarizingASRInput,
+    MergerOutput,
+    DiarizingASROutput,
+    RTDiarizationError,
+)
 
 
 class RTDiarizationService(AsyncResource):
@@ -40,7 +45,6 @@ class RTDiarizationService(AsyncResource):
                 "SAMPLE_RATE must be a positive integer greater than or equal to 8000"
             )
 
-        super().__init__()
         ray.init(
             ignore_reinit_error=True,
         )
@@ -52,9 +56,9 @@ class RTDiarizationService(AsyncResource):
             DiarizingASR.remote(MAX_STORAGE_SIZE, MIN_AUDIO_DURATION, SAMPLE_RATE)
             for _ in range(NUM_CONSUMERS)
         ]
-        self.__callbacks: dict[str:Callable[
-            [DiarizingASROutput | MergerOutput | None], Exception | None
-        ]] = {}
+        self.__callbacks: dict[
+            str : Callable[[DiarizingASROutput | MergerOutput | None], Exception | None]
+        ] = {}
         self.__task: asyncio.Future = None
         self.__lock = asyncio.Lock()
 
@@ -136,3 +140,6 @@ class RTDiarizationService(AsyncResource):
 
     async def request(self, X: DiarizingASRInput):
         await self.broker.register_diarizing_asr.remote(X)
+
+
+__all__ = ["RTDiarizationService"]

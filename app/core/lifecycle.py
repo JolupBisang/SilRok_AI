@@ -3,11 +3,13 @@ from fastapi import FastAPI
 
 
 async def startup(app: FastAPI):
-    from . import logger
+    from core.logging_manager import logger
     from containers import Container
+    from test.containers import TestContainer
 
     try:
         await Container.get_manager().init_main()
+        await TestContainer.get_manager().init_test()
     except Exception as e:
         raise SystemExit(f"❌ FastAPI 서버 시작 실패: {e}. ")
 
@@ -19,10 +21,13 @@ async def startup(app: FastAPI):
 
 
 async def shutdown(app: FastAPI):
-    from . import logger
+    from core.logging_manager import logger
     from containers import Container
+    from test.containers import TestContainer
 
     await Container.get_manager().shutdown_resources()
+    await TestContainer.get_manager().shutdown_resources()
+
     logger().info("🛑 FastAPI 서버 종료!")
 
 
@@ -33,3 +38,6 @@ async def lifespan(app: FastAPI):
     yield
     # 서버 종료 이벤트
     await shutdown(app)
+
+
+__all__ = ["lifespan"]

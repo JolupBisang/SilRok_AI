@@ -1,10 +1,10 @@
 # dto/response/__init__.py
 
-from .diarization_embed_response import DiarizationEmbedResponse
-from .diarization_response import DiarizationResponse
-from .llm_response import LLMResponse
-from .llm_context_response import LLMContextResponse
-from .error_response import ErrorResponse
+from dto.response.diarization_embed_response import DiarizationEmbedResponse
+from dto.response.diarization_response import DiarizationResponse
+from dto.response.llm_response import LLMResponse
+from dto.response.llm_context_response import LLMContextResponse
+from dto.response.error_response import ErrorResponse
 
 __all__ = [
     "DiarizationEmbedResponse",

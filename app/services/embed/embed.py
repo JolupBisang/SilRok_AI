@@ -1,7 +1,7 @@
 import asyncio
 import ray
 
-from .dto import EmbedInput, EmbedOutput
+from services.embed.dto import EmbedInput, EmbedOutput
 
 
 @ray.remote(num_cpus=1, num_gpus=0.08)

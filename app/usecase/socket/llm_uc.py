@@ -19,8 +19,8 @@ class LLMUC(DiarizationUC):
         llm_service: LLMService,
         **kwargs,
     ):
-        if not isinstance(llm_service, LLMService):
-            raise TypeError("llm_service must be an instance of LLMService")
+        # if not isinstance(llm_service, LLMService):
+        #     raise TypeError("llm_service must be an instance of LLMService")
 
         super().__init__(*args, **kwargs)
         self.llm_service = llm_service
