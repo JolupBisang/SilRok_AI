@@ -1,19 +1,24 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from typing import Callable
 from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
-from dto.response import DiarizationResponse, DiarizationEmbedResponse, ErrorResponse
-from services.embed import EmbedInput, EmbedOutput, EmbedService
-from services.rt_diarization import (
-    RTDiarizationService,
-    RTDiarizationInput,
-    RTDiarizationOutput,
-)
 from util import LRUDict
+from dto.response import DiarizationResponse, DiarizationEmbedResponse, ErrorResponse
 
-from .a_socket_uc import ASocketUC
-from .dto import DiarizationMetadata, Metadata
-from .dto.flag import *
+from usecase.socket.a_socket_uc import ASocketUC
+from usecase.socket.dto import DiarizationMetadata, Metadata
+from usecase.socket.dto.flag import *
+
+if TYPE_CHECKING:
+    from services.embed import EmbedService, EmbedInput, EmbedOutput
+    from services.rt_diarization import (
+        RTDiarizationService,
+        RTDiarizationInput,
+        RTDiarizationOutput
+    )
 
 
 class DiarizationUC(ASocketUC):
@@ -22,16 +27,15 @@ class DiarizationUC(ASocketUC):
         *args,
         rt_diarization_service: RTDiarizationService,
         embed_service: EmbedService,
-        SAMPLE_RATE: int,
         MAX_BUFFER_SIZE: int,
         **kwargs,
     ):
-        if not isinstance(rt_diarization_service, RTDiarizationService):
-            raise TypeError(
-                "rt_diarization_service must be an instance of RTDiarizationService"
-            )
-        if not isinstance(embed_service, EmbedService):
-            raise TypeError("embed_service must be an instance of EmbedService")
+        # if not isinstance(rt_diarization_service, RTDiarizationService):
+        #     raise TypeError(
+        #         "rt_diarization_service must be an instance of RTDiarizationService"
+        #     )
+        # if not isinstance(embed_service, EmbedService):
+        #     raise TypeError("embed_service must be an instance of EmbedService")
         if not isinstance(MAX_BUFFER_SIZE, int) or MAX_BUFFER_SIZE <= 1:
             raise ValueError(
                 "MAX_BUFFER_SIZE must be a positive integer greater than 1"
@@ -43,7 +47,6 @@ class DiarizationUC(ASocketUC):
         self.__callbacks: dict[str, Callable[[EmbedOutput], None]] = {}
         self.__storage: dict[str, LRUDict] = {}
 
-        self.__SAMPLE_RATE = SAMPLE_RATE
         self.__MAX_BUFFER_SIZE = MAX_BUFFER_SIZE
 
     def _storage_init(self, sid: str, metadata: DiarizationMetadata):
@@ -59,44 +62,32 @@ class DiarizationUC(ASocketUC):
         if flag not in DIARIZE_FLAGS:
             return False
 
-        diarization_metadata = DiarizationMetadata.from_metadata(metadata)
+        dm = DiarizationMetadata.from_metadata(metadata)
 
         if flag == DIARIZATION_EMBED:
             self.embed_service.request_with_callback(
-                EmbedInput(
-                    user_id=diarization_metadata.user_id,
-                    audio=diarization_metadata.audio,
-                    sample_rate=self.__SAMPLE_RATE,
-                ),
-                self.__callbacks[sid],
+                dm.to_embed_input(),
+                self.__callbacks[sid]
             )
             return True
         else:
-            group_id = diarization_metadata.group_id
+            group_id = dm.group_id
             storage = self.__storage[sid]
             if group_id not in storage:
-                self._storage_init(sid, diarization_metadata)
-
+                self._storage_init(sid, dm)
             if flag == DIARIZATION_REFER:
-                storage[group_id]["refer"] = diarization_metadata.refer()
+                storage[group_id]["refer"] = dm.to_refer()
                 storage[group_id]["users"].clear()
                 self.logger.debug(f"diarization register refer")
                 return True
             elif flag == DIARIZATION:
-                user_id = diarization_metadata.user_id
+                user_id = dm.user_id
                 refer = {}
                 if user_id not in storage[group_id]["users"]:
                     refer = storage[group_id]["refer"]
                     storage[group_id]["users"].add(user_id)
                 await self.rt_diarization_service.request(
-                    RTDiarizationInput(
-                        uuid=sid,
-                        audio=diarization_metadata.audio,
-                        group_id=diarization_metadata.group_id,
-                        user_id=diarization_metadata.user_id,
-                        refer_dict=refer,
-                        sc_offset=diarization_metadata.sc_offset,
-                    )
+                    dm.to_rt_diarization_input(sid, refer)
                 )
                 self.logger.debug(f"diarization service")
                 return True

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from .flag import *
+from services.llm.dto.flag import DONE, REQUEST, UPDATE
 
 
 @dataclass(slots=True)
@@ -18,3 +18,5 @@ class LLMInput:
             raise ValueError(
                 f"Invalid mode: {self.mode}. Must be one of {DONE}, {REQUEST}, {UPDATE}."
             )
+
+__all__ = ["LLMInput"]

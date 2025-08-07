@@ -1,11 +1,12 @@
 import asyncio
+import ray
+
 from logging import Logger
 from typing import Callable
 from dependency_injector.resources import AsyncResource
-import ray
 
-from .embed import Embed
-from .dto import EmbedInput, EmbedOutput
+from services.embed.embed import Embed
+from services.embed.dto import EmbedInput, EmbedOutput
 
 
 class EmbedService(AsyncResource):
@@ -13,7 +14,6 @@ class EmbedService(AsyncResource):
         if not isinstance(logger, Logger):
             raise TypeError("logger must be an instance of logging.Logger")
 
-        super().__init__()
         ray.init(ignore_reinit_error=True)
 
         self.logger = logger

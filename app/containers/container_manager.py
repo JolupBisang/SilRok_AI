@@ -34,3 +34,6 @@ class ContainerManager:
 
     async def shutdown_resources(self):
         await self.container.shutdown_resources()
+
+
+__all__ = ["ContainerManager"]

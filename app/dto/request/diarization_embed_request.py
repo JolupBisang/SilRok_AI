@@ -1,7 +1,7 @@
 from fastapi import Request
 from pydantic import BaseModel
 
-from core import Config
+from core.config import Config
 from dto.request.annotations import AudioFile, SampleRate
 
 

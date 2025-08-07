@@ -3,8 +3,8 @@ import ray
 
 from util import LRUDict
 
-from .broker import Broker
-from .dto import MergerContext, MergerInput, MergerOutput, Speak
+from services.rt_diarization.broker import Broker
+from services.rt_diarization.dto import MergerContext, MergerInput, MergerOutput, Speak
 
 
 @ray.remote(num_cpus=1)
@@ -82,16 +82,17 @@ class Merger:
             return []
 
         speaks_groups = [[speaks[0]]]
-        cnt_idx = 1
-        while cnt_idx < len(speaks):
-            speak = speaks[cnt_idx]
-            while cnt_idx < len(speaks) and self.__speak_iou(speak, speaks[cnt_idx]) > 0.5:
-                speaks_groups[-1].append(speaks[cnt_idx])
-                cnt_idx += 1
-            if cnt_idx < len(speaks):
-                speaks_groups.append([speaks[cnt_idx]])
-                cnt_idx += 1
-        
+        cnt_idx = 0
+        # while cnt_idx < len(speaks):
+        #     speak = speaks[cnt_idx]
+        #     while (
+        #         cnt_idx < len(speaks) and self.__speak_iou(speak, speaks[cnt_idx]) > 0.5
+        #     ):
+        #         speaks_groups[-1].append(speaks[cnt_idx])
+        #         cnt_idx += 1
+        #     if cnt_idx < len(speaks):
+        #         speaks_groups.append([speaks[cnt_idx]])
+        #         cnt_idx += 1
 
         for speak in speaks[1:]:
             similarities = []
@@ -128,3 +129,6 @@ class Merger:
             self.__task = None
             ray.actor.exit_actor()
             self.logger.info("Merger closed")
+
+
+__all__ = ["Merger"]

@@ -8,3 +8,5 @@ class RTDiarizationError:
 
     def __str__(self):
         return self.error.__str__()
+
+__all__ = ["RTDiarizationError"]

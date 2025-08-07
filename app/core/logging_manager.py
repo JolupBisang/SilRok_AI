@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from rich.logging import RichHandler
 
-from .config import Config
+from core.config import Config
 
 config = Config.get_instance()
 LOG_DIR_PATH = Path(config.config.server.log_dir)
@@ -88,3 +88,9 @@ def generate(name: str, level: int = DEFAULT_LOG_LEVEL):
             handler.setLevel(FILE_LOG_LEVEL)
 
     return logger
+
+
+logger = generate("core", DEFAULT_LOG_LEVEL)
+
+
+__all__ = ["setup_main_logging", "generate", "logger"]

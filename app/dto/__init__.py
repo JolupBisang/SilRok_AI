@@ -1,5 +1,5 @@
 # dto/__init__.py
 
-from . import request, response
+from dto import request, response
 
 __all__ = ["request", "response"]

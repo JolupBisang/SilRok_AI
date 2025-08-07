@@ -1,12 +1,12 @@
-from dataclasses import dataclass, field
-
 import numpy as np
+
+from dataclasses import dataclass, field
 
 from rt_whisper.data import Param, Sentence
 
-from .diarizing_asr_input import DiarizingASRInput
-from .fixed_buffer_clustering import FixedBufferClustering
-from .speak import Speak
+from services.rt_diarization.dto.diarizing_asr_input import DiarizingASRInput
+from services.rt_diarization.dto.fixed_buffer_clustering import FixedBufferClustering
+from services.rt_diarization.dto.speak import Speak
 
 
 @dataclass(slots=True)
@@ -80,3 +80,6 @@ class DiarizingASRContext:
             context.offset = X.sc_offset
 
         return context
+
+
+__all__ = ["DiarizingASRContext"]

@@ -33,14 +33,14 @@ class DiarizationUC:
         llm_service: LLMService,
         SAMPLE_RATE: int,
     ):
-        if not isinstance(embed_service, EmbedService):
-            raise TypeError("embed_service must be an instance of EmbedService")
-        if not isinstance(rt_diarization_service, RTDiarizationService):
-            raise TypeError(
-                "rt_diarization_service must be an instance of RTDiarizationService"
-            )
-        if not isinstance(llm_service, LLMService):
-            raise TypeError("llm_service must be an instance of LLMService")
+        # if not isinstance(embed_service, EmbedService):
+        #     raise TypeError("embed_service must be an instance of EmbedService")
+        # if not isinstance(rt_diarization_service, RTDiarizationService):
+        #     raise TypeError(
+        #         "rt_diarization_service must be an instance of RTDiarizationService"
+        #     )
+        # if not isinstance(llm_service, LLMService):
+        #     raise TypeError("llm_service must be an instance of LLMService")
         if not isinstance(SAMPLE_RATE, int) or SAMPLE_RATE < 8000:
             raise ValueError(
                 "SAMPLE_RATE must be a positive integer greater than or equal to 8000"

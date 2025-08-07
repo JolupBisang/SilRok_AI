@@ -42,3 +42,5 @@ class Speak:
             audio_id=data["audio_id"],
             sentence=Sentence(**data["sentence"]),
         )
+
+__all__ = ["Speak"]

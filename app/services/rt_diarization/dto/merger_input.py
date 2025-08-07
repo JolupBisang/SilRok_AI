@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
-from .diarizing_asr_context import DiarizingASRContext
-from .speak import Speak
+from services.rt_diarization.dto.diarizing_asr_context import DiarizingASRContext
+from services.rt_diarization.dto.speak import Speak
 
 
 @dataclass(slots=True)
@@ -24,3 +24,5 @@ class MergerInput:
             completed=context.diarization_completed,
             candidate=context.diarization_candidate,
         )
+
+__all__ = ["MergerInput"]

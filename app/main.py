@@ -4,19 +4,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.lifecycle import lifespan
 from api import api_router, wire_modules
 from containers import Container
+from test.containers import TestContainer
+from test.api import test_api_router, test_wire_modules
 from core.logging_manager import setup_main_logging
 from docs import DESCRIPTION
 
 
 def server() -> FastAPI:
     setup_main_logging()  # 로깅 설정
+
     manager = Container.get_manager()  # 컨테이너 인스턴스 가져오기
     manager.container.wire(modules=wire_modules)  # 의존성 주입 설정
     config = manager.container.config
 
+    test_manager = TestContainer.get_manager()  # 테스트 컨테이너 인스턴스 가져오기
+    test_manager.container.wire(modules=test_wire_modules)  # 테스트 의존성 주입 설정
+
     # FastAPI 앱 생성
     app = FastAPI(
-        title = config.server.name(),  # 프로젝트 이름
+        title=config.server.name(),  # 프로젝트 이름
         version=config.server.version(),  # 프로젝트 버전
         description=DESCRIPTION,
         lifespan=lifespan,
@@ -34,6 +40,8 @@ def server() -> FastAPI:
 
     # 라우터 등록 (API 엔드포인트)
     app.include_router(api_router, prefix="")
+
+    app.include_router(test_api_router, prefix="/test", tags=["Test"])
 
     return app
 

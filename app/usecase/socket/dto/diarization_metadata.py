@@ -1,13 +1,21 @@
-from dataclasses import dataclass
-from functools import cached_property
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from core import Config
+from dataclasses import dataclass
+from functools import cached_property
+
+from core.config import Config
 from util.util import bytes_to_np, decompress_from_opus, mp4_bytes_to_ndarray
 
-from .metadata import Metadata
-from .flag import DIARIZATION_EMBED
+from services.embed import EmbedInput
+from services.rt_diarization import RTDiarizationInput
+from usecase.socket.dto.flag import DIARIZATION_EMBED
+
+if TYPE_CHECKING:
+    from usecase.socket.dto.metadata import Metadata
+
 
 SAMPLE_RATE = Config.get_instance().config.service.sample_rate
 MIN_DURATION = 8000
@@ -58,7 +66,7 @@ class DiarizationMetadata:
             # audio = np.nan_to_num(audio, nan=0.0, posinf=0.0, neginf=0.0)
         return audio
 
-    def refer(self):
+    def to_refer(self):
         length = len(self.metadata.payload)
         if length == 0:
             raise ValueError("No refer data found in metadata payload")
@@ -77,6 +85,23 @@ class DiarizationMetadata:
                 )
                 start = end
         return refer_dict
+
+    def to_embed_input(self, sr = SAMPLE_RATE):
+        return EmbedInput(
+            user_id=self.user_id,
+            audio=self.audio,
+            sample_rate=sr,
+        )
+
+    def to_rt_diarization_input(self, sid: str, refer:dict):
+        return RTDiarizationInput(
+            uuid=sid,
+            audio=self.audio,
+            group_id=self.group_id,
+            user_id=self.user_id,
+            refer_dict=refer,
+            sc_offset=self.sc_offset,
+        )
 
     @staticmethod
     def from_metadata(metadata: Metadata):

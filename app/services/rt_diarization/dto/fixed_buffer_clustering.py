@@ -1,10 +1,11 @@
 import numpy as np
 
-from core import Config
+from core.config import Config
 
-from .cluster import Cluster
+from services.rt_diarization.dto.cluster import Cluster
 
 SAME_USER_WEIGHT = Config.get_instance().config.service.rt_diarization.same_user_weight
+
 
 class FixedBufferClustering:
     def __init__(
@@ -31,3 +32,6 @@ class FixedBufferClustering:
         max_key, similarity = self.get_closest(vector)
         self.__clusters[max_key].add(vector)
         return max_key, similarity
+
+
+__all__ = ["FixedBufferClustering"]

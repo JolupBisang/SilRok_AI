@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import File, Query
 from pydantic import Field
 
-from core import Config
+from core.config import Config
 
 # 임시 코드
 SAMPLE_RATE = Config.get_instance().config.service.sample_rate

@@ -4,8 +4,8 @@ import ray
 
 from util import LRUDict
 
-from .dto import LLMInput, LLMContext, LLMOutput
-from .dto.flag import *
+from services.llm.dto import LLMInput, LLMContext, LLMOutput
+from services.llm.dto.flag import DONE, REQUEST, UPDATE
 
 
 @ray.remote(num_cpus=1)

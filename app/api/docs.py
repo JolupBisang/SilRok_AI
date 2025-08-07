@@ -124,3 +124,5 @@ async def websocket_docs():
             "14. 클라이언트 요청 종료시, 따로 플래그 없이 연결 종료 하면 됨"
         ],
     })
+
+__all__ = ["router"]

@@ -4,8 +4,8 @@ import ray
 import asyncio
 from dependency_injector.resources import AsyncResource
 
-from .llm import LLM
-from .dto import LLMInput, LLMOutput
+from services.llm.llm import LLM
+from services.llm.dto import LLMInput, LLMOutput
 
 
 class LLMService(AsyncResource):
@@ -23,7 +23,6 @@ class LLMService(AsyncResource):
         if not isinstance(MAX_CACHE_SIZE, int) or MAX_CACHE_SIZE <= 0:
             raise ValueError("MAX_CACHE_SIZE must be a positive integer")
 
-        super().__init__()
         ray.init(ignore_reinit_error=True)
 
         self.logger = logger

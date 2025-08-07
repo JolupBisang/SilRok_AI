@@ -2,7 +2,8 @@ from functools import lru_cache
 from dependency_injector import providers
 from dependency_injector.containers import DeclarativeContainer
 
-from core import Config
+from core.config import Config
+from core.logging_manager import logger
 from models import Gemini, Pyannote
 from services.embed import EmbedService
 from services.llm import LLMService
@@ -10,9 +11,8 @@ from services.rt_diarization import RTDiarizationService
 from usecase.diarization import DiarizationUC
 from usecase.llm import LLMUC
 from usecase.socket import SocketUC
-from core import logger
 
-from .container_manager import ContainerManager
+from containers.container_manager import ContainerManager
 
 
 class Container(DeclarativeContainer):
@@ -74,7 +74,6 @@ class Container(DeclarativeContainer):
         llm_service=llm_service,
         rt_diarization_service=rt_diarization_service,
         embed_service=embed_service,
-        SAMPLE_RATE =config.service.sample_rate,
         MAX_CONNECTIONS=config.service.socket.max_connections,
         MAX_BUFFER_SIZE=config.service.socket.max_buffer_size,
     )
@@ -94,3 +93,6 @@ class Container(DeclarativeContainer):
             container.config.update(Config.get_instance().dict)
             Container.manager = ContainerManager(container)
         return Container.manager
+
+
+__all__ = ["Container"]

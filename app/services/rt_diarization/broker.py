@@ -3,7 +3,7 @@ from typing import Any
 import ray
 from asyncio import Queue
 
-from .dto import DiarizingASRInput, MergerInput, MergerOutput, RTDiarizationError
+from services.rt_diarization.dto import DiarizingASRInput, MergerInput, MergerOutput, RTDiarizationError
 
 
 @ray.remote(num_cpus=1)
@@ -96,3 +96,5 @@ class Broker:
 
     async def send_sig_to_result_queue(self, sig: Any):
         await self.__result.put(sig)
+
+__all__ = ["Broker"]

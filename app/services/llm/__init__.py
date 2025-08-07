@@ -1,7 +1,7 @@
 # services/llm/__init__.py
 
-from .llm_service import LLMService
-from .dto import LLMInput, LLMOutput
+from services.llm.llm_service import LLMService
+from services.llm.dto import LLMInput, LLMOutput
 
 __all__ = [
     "LLMInput",

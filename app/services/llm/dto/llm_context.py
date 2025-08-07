@@ -1,9 +1,9 @@
 from google.generativeai import ChatSession
 from dataclasses import dataclass, field
 
-from .llm_input import LLMInput
-from .prompts import PROMPT, BACKGROUND, AGENDA, FEEDBACK, JUST_SEND, FINAL_PROMPT
-from .flag import *
+from services.llm.dto.llm_input import LLMInput
+from services.llm.dto.prompts import PROMPT, BACKGROUND, AGENDA, FEEDBACK, JUST_SEND, FINAL_PROMPT
+from services.llm.dto.flag import DONE, REQUEST, UPDATE
 
 
 @dataclass(slots=True)
@@ -81,3 +81,5 @@ class LLMContext:
             raise ValueError(
                 f"Invalid mode: {self.mode}. Must be one of {DONE}, {REQUEST}, {UPDATE}."
             )
+
+__all__ = ["LLMContext"]
